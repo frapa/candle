@@ -14,6 +14,8 @@ type AnyModel interface {}
  */
 type BaseModel struct {
     Id string
+    Persisted bool `nodb` // is it already in the db?
+    Synced bool `nodb`
 }
 
 // Constructor initilizes basic model

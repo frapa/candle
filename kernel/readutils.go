@@ -212,25 +212,6 @@ func (q *query) retrieveData() error {
 	return nil
 }
 
-func setField(field reflect.Value, value interface{}) {
-	type_ := reflect.TypeOf(value).Name()
-
-	// actually I should have used field.Set all the way!
-	if type_ == "string" {
-		field.SetString(value.(string))
-	} else if type_ == "int" {
-		field.SetInt(value.(int64))
-	} else if type_ == "float64" {
-		field.SetFloat(value.(float64))
-	} else if type_ == "time.Time" {
-		time, err := time.Parse(ISO8601, value.(string))
-		if err != nil {
-			panic(err)
-		}
-		field.Set(reflect.ValueOf(time))
-	}
-}
-
 func setStructFields(str interface{}, row map[string]interface{}) {
 	elem := reflect.ValueOf(str).Elem()
 	elemType := elem.Type()
@@ -242,17 +223,21 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 			continue
 		}
 
+		fieldValue := elem.Field(i)
 		fieldName := field.Name
 		type_ := field.Type.Name()
 		tag := field.Tag
 
-		if tag != "nodb" {
+		if tag == "nodb" {
+			if fieldName == "Persisted" {
+				fieldValue.SetBool(true)
+			}
+		} else {
 			/* This is probably the most magic of all magic,
 			 * It gets a reflect.Value, which can be almost anything,
 			 * but in this case it should be a struct field and sets
 			 * a value of unknown type :-)
 			 */
-			fieldValue := elem.Field(i)
 			iValue := row[fieldName]
 			value := reflect.ValueOf(iValue)
 			if type_ == "string" {

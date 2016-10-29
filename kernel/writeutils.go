@@ -35,8 +35,11 @@ func (r *record) copyColsFrom(others []*record) {
 
 // TABLES -----------------------------------------------------
 type table struct {
-	name   string
-	fields map[string]string
+	name     string
+	fields   map[string]string // maps field with type as string
+	links    map[string]string // maps fields with table names
+	inverses map[string]string // maps field with inverse field name
+	reverses map[string]string // maps inverse field name with field
 }
 
 func newTable() *table {
@@ -47,6 +50,16 @@ func newTable() *table {
 
 func (t *table) addCol(col string, type_ string) {
 	t.fields[col] = type_
+}
+
+func (t *table) addLink(col string, type_ string, tag string) {
+	t.links[col] = type_
+
+	pieces := strings.Split(tag, ":")
+	if len(pieces) == 2 && pieces[0] == "inverse" {
+		t.inverses[col] = pieces[1]
+		t.reverses[pieces[1]] = col
+	}
 }
 
 func (t *table) copyColsFrom(others []*table) {
@@ -132,7 +145,12 @@ func createTableFromModel(model AnyModel) []*table {
 		tag := field.Tag
 
 		if tag != "nodb" {
-			tab.addCol(fieldName, type_)
+			if field.Type.Kind().String() == "struct" {
+				// this is a link
+				tab.addLink(fieldName, type_, string(tag))
+			} else {
+				tab.addCol(fieldName, type_)
+			}
 		}
 	}
 
@@ -168,10 +186,15 @@ func createRecordFromModel(model AnyModel, topModelName_ ...string) []*record {
 		fieldName := field.Name
 		tag := field.Tag
 
-		if tag != "nodb" {
+		if tag != "nodb" && field.Type.Kind().String() != "struct" {
 			if tag == "class" {
 				rec.addCol(fieldName, reflect.ValueOf(topModelName))
 			} else {
+				if fieldName == "Id" && fieldValue.(string) == "" {
+					fmt.Println("WARNING: trying to save '" + topModelName +
+						"' without Id. Maybe constructor missing?")
+				}
+
 				rec.addCol(fieldName, fieldValue)
 			}
 		}

@@ -3,11 +3,20 @@ package main
 import (
 	"fmt"
 	"github.com/frapa/candle/kernel"
-	"time"
+	//"time"
 )
 
+type Avatar struct {
+	kernel.BaseModel
+	Url string
+}
+
 func main() {
-	var user kernel.User
+	var avatar Avatar
+	kernel.All("User").Filter("Id", "=", "id1").To("Avatar").Get(&avatar)
+	fmt.Println(avatar.Url)
+
+	/*var user kernel.User
 	kernel.All("User").Filter("Id", "=", "id2").Get(&user)
 	fmt.Printf("USER: %v\n", user)
 
@@ -20,5 +29,5 @@ func main() {
 	user2.PswHash = "23123nk1j2b3kh1b23"
 	user2.LastLog = time.Now().UTC()
 
-	kernel.Save(user2)
+	kernel.Save(user2)*/
 }

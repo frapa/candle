@@ -5,6 +5,7 @@ package kernel
 
 import (
 	"fmt"
+	"github.com/rs/xid"
 	"reflect"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ const (
 	ISO8601 = "2006-01-02 15:04:05"
 )
 
+// FILTER -----------------------------------------------------------
 type filter struct {
 	type_      int
 	column     string
@@ -56,6 +58,21 @@ func Or(filters ...filter) filter {
 	return newParentFilter(filters, OR)
 }
 
+func (f filter) Clone() filter {
+	fCopy := *new(filter)
+
+	fCopy.type_ = f.type_
+	fCopy.column = f.column
+	fCopy.operator = f.operator
+	fCopy.value = f.value
+
+	for _, sf := range f.subFilters {
+		fCopy.subFilters = append(fCopy.subFilters, sf.Clone())
+	}
+
+	return fCopy
+}
+
 func (f *filter) computeSql() (string, []interface{}) {
 	if f.type_ == ATTR {
 		return f.column + " " + f.operator + " ?", []interface{}{f.value}
@@ -78,21 +95,24 @@ func (f *filter) computeSql() (string, []interface{}) {
 	return "", nil // stupid go
 }
 
+// ORDER -----------------------------------------------------------
 type order struct {
 	column    string
 	direction int
 }
 
+// QUERY -----------------------------------------------------------
 type query struct {
 	tableName string
 	filter    filter
 	limit     uint
-	offset    uint
+	offset    int
 	order     order
-	executed  bool
 	current   int
 	rows      []map[string]interface{}
 	rowNum    int
+	subQuery  *query // used for joins
+	joinQuery bool
 }
 
 /* Get data from database. The name is all because it
@@ -112,10 +132,29 @@ func All(modelName string) *query {
 	q := new(query)
 	q.tableName = modelName
 	q.current = -1
+	q.offset = -1
 	return q
 }
 
+func (q *query) Clone() *query {
+	qCopy := All(q.tableName)
+
+	qCopy.limit = q.limit
+	qCopy.offset = q.offset
+	qCopy.current = q.current
+	qCopy.order = order{q.order.column, q.order.direction}
+	qCopy.filter = q.filter.Clone()
+
+	if q.subQuery != nil {
+		qCopy.subQuery = q.subQuery.Clone()
+	}
+
+	return qCopy
+}
+
 func (q *query) Filter(data ...interface{}) *query {
+	nq := q.Clone()
+
 	if len(data) == 0 {
 		panic("Filter requires at least one argument.")
 	}
@@ -126,12 +165,70 @@ func (q *query) Filter(data ...interface{}) *query {
 			panic("Filter requires <column>, <operator> and <value> as arguments.")
 		}
 
-		q.filter = F(data[0].(string), data[1].(string), data[2].(string))
+		nq.filter = F(data[0].(string), data[1].(string), data[2].(string))
 	} else if typeName == "filter" {
-		q.filter = data[0].(filter)
+		nq.filter = data[0].(filter)
 	}
 
-	return q
+	return nq
+}
+
+func (q *query) Limit(limit uint) *query {
+	nq := q.Clone()
+	nq.limit = limit
+	return nq
+}
+
+func (q *query) Offset(offset int) *query {
+	nq := q.Clone()
+	nq.offset = offset
+	return nq
+}
+
+func (q *query) OrderBy(column string, direction_ ...int) *query {
+	nq := q.Clone()
+
+	direction := INC
+	if len(direction_) > 0 {
+		direction = direction_[0]
+	}
+
+	nq.order = order{column, direction}
+	return nq
+}
+
+func (q *query) getLinkedTable(column string) string {
+	sql := "SELECT TargetClass FROM _Links WHERE ModelClass='" +
+		q.tableName + "' AND Attr='" + column + "'"
+
+	row := GetDb().QueryRow(sql)
+
+	var class string
+
+	err := row.Scan(&class)
+	if err != nil {
+		panic(err)
+	}
+
+	return class
+}
+
+func (q *query) To(column string) *query {
+	// Check if we are in a loop. In that case we have to return
+	// a completely new query connected with the current object
+	if q.current != -1 {
+
+	} else {
+		otherClass := q.getLinkedTable(column)
+
+		nq := All(otherClass)
+		nq.joinQuery = true
+		nq.subQuery = q.Clone()
+
+		return nq
+	}
+
+	return nil
 }
 
 func (q *query) computeQuery() (string, []interface{}) {
@@ -144,7 +241,33 @@ func (q *query) computeQuery() (string, []interface{}) {
 		args = append(args, vals...)
 	}
 
-	sql := "SELECT * FROM " + q.tableName + filters + ";"
+	orderLimitOffset := ""
+	if q.order.column != "" {
+		orderLimitOffset += " ORDER BY " + q.order.column
+		if q.order.direction == INC {
+			orderLimitOffset += " ASC"
+		} else {
+			orderLimitOffset += " DESC"
+		}
+	}
+	if q.limit != 0 {
+		orderLimitOffset += " LIMIT " + fmt.Sprintf("%v", q.limit)
+	}
+	if q.offset != -1 {
+		orderLimitOffset += " OFFSET " + fmt.Sprintf("%v", q.offset)
+	}
+
+	var sql string
+	if q.joinQuery {
+		subSql, subArgs := q.subQuery.computeQuery()
+		tempTableName := "tab" + xid.New().String()
+		sql = "SELECT " + q.tableName + ".* FROM (" + subSql + ") AS " + tempTableName +
+			" INNER JOIN _Links ON _Links.ModelId=" + tempTableName + ".Id INNER JOIN " +
+			q.tableName + " ON _Links.TargetId=" + q.tableName + ".Id" + filters + orderLimitOffset + ";"
+		args = append(subArgs, args)
+	} else {
+		sql = "SELECT * FROM " + q.tableName + filters + orderLimitOffset + ";"
+	}
 
 	return sql, args
 }
@@ -257,15 +380,17 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 }
 
 func (q *query) Get(str interface{}) {
+	var nq *query
 	if q.current == -1 {
-		q.Next()
+		nq = q.Limit(1)
+		nq.Next()
 	}
 
-	if q.current >= q.rowNum {
+	if nq.current >= nq.rowNum {
 		fmt.Println("WARNING: trying to get non-existant model")
 		return
 	}
 
-	row := q.rows[q.current]
+	row := nq.rows[nq.current]
 	setStructFields(str, row)
 }

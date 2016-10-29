@@ -2,6 +2,7 @@
 *.o
 *.a
 *.so
+testing/app
 
 # Folders
 _obj
@@ -28,5 +29,7 @@ _testmain.go
 *.swp
 
 # other editors
-
 *~
+
+# db
+testing/db.sqlite

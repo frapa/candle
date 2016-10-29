@@ -61,12 +61,11 @@ func (t *table) setName(name string) {
 	t.name = name
 }
 
-func (t *table) getInsertSql(rec *record) (string, []interface{}) {
+func (t *table) getUpdateSql(rec *record) (string, []interface{}) {
 	var colNames []string
 	var strValues []interface{}
-	var questionMarks []string
 	for field, type_ := range t.fields {
-		colNames = append(colNames, field)
+		colNames = append(colNames, field+"=?")
 		value := rec.fields[field]
 
 		if type_ == "Time" {
@@ -74,18 +73,16 @@ func (t *table) getInsertSql(rec *record) (string, []interface{}) {
 		} else {
 			strValues = append(strValues, fmt.Sprintf("%v", value))
 		}
-
-		questionMarks = append(questionMarks, "?")
 	}
 
 	joinedCols := strings.Join(colNames, ", ")
-	joinedVals := strings.Join(questionMarks, ", ")
-	sql := "INSERT INTO " + t.name + " (" + joinedCols + ") VALUES (" + joinedVals + ");"
+	sql := "UPDATE " + t.name + " SET " + joinedCols + " WHERE Id=?;"
+	strValues = append(strValues, rec.fields["Id"])
 
 	return sql, strValues
 }
 
-func (t *table) getUpdateSql(rec *record) (string, []interface{}) {
+func (t *table) getInsertSql(rec *record) (string, []interface{}) {
 	var colNames []string
 	var strValues []interface{}
 	var questionMarks []string
@@ -122,9 +119,10 @@ func createTableFromModel(model AnyModel) []*table {
 
 	for i := 0; i < modelType.NumField(); i++ {
 		field := modelType.Field(i)
-		fieldValue := modelElem.Field(i).Interface().(AnyModel)
+		fieldValue := modelElem.Field(i).Interface()
 		if field.Anonymous {
-			tabs = append(tabs, createTableFromModel(fieldValue)...)
+			tabs = append(tabs,
+				createTableFromModel(fieldValue.(AnyModel))...)
 			tab.copyColsFrom(tabs)
 			continue
 		}
@@ -141,11 +139,18 @@ func createTableFromModel(model AnyModel) []*table {
 	return tabs
 }
 
-func createRecordFromModel(model AnyModel) []*record {
+func createRecordFromModel(model AnyModel, topModelName_ ...string) []*record {
 	var recs []*record
 
 	modelElem := reflect.ValueOf(model)
 	modelType := modelElem.Type()
+
+	var topModelName string
+	if len(topModelName_) == 0 {
+		topModelName = modelType.Name()
+	} else {
+		topModelName = topModelName_[0]
+	}
 
 	rec := newRecord()
 	recs = append(recs, rec)
@@ -155,7 +160,7 @@ func createRecordFromModel(model AnyModel) []*record {
 		fieldValue := modelElem.Field(i).Interface()
 		if field.Anonymous {
 			recs = append(recs,
-				createRecordFromModel(fieldValue.(AnyModel))...)
+				createRecordFromModel(fieldValue.(AnyModel), topModelName)...)
 			rec.copyColsFrom(recs)
 			continue
 		}
@@ -164,7 +169,11 @@ func createRecordFromModel(model AnyModel) []*record {
 		tag := field.Tag
 
 		if tag != "nodb" {
-			rec.addCol(fieldName, fieldValue)
+			if tag == "class" {
+				rec.addCol(fieldName, reflect.ValueOf(topModelName))
+			} else {
+				rec.addCol(fieldName, fieldValue)
+			}
 		}
 	}
 

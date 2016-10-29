@@ -14,4 +14,11 @@ func main() {
 	user.LastLog = time.Now().UTC()
 
 	kernel.Save(user)
+
+	var user2 kernel.User
+	user2.UserName = "terzo"
+	user2.PswHash = "23123nk1j2b3kh1b23"
+	user2.LastLog = time.Now().UTC()
+
+	kernel.Save(user2)
 }

@@ -9,12 +9,21 @@ import (
 type Avatar struct {
 	kernel.BaseModel
 	Url string
+	Usr kernel.User `inverse:Avatar`
 }
 
 func main() {
 	var avatar Avatar
-	kernel.All("User").Filter("Id", "=", "id1").To("Avatar").Get(&avatar)
-	fmt.Println(avatar.Url)
+	avatar.Id = "asdasfasfa23423"
+	avatar.Url = "/a/test/url"
+	kernel.Save(&avatar)
+	fmt.Println(avatar.Class)
+
+	var user kernel.User
+	kernel.All("User").Filter("Id", "=", "id2").Get(&user)
+	err := user.Link("Avatar", avatar)
+
+	fmt.Println(err)
 
 	/*var user kernel.User
 	kernel.All("User").Filter("Id", "=", "id2").Get(&user)

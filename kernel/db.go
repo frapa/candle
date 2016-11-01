@@ -7,6 +7,10 @@ import (
 
 var db *sql.DB
 
+func init() {
+	initDatabase("db.sqlite")
+}
+
 func initDatabase(file string) {
 	db_, err := sql.Open("sqlite3", file)
 	if err != nil {

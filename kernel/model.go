@@ -12,6 +12,7 @@ type AnyModel interface {
 	GetClass() string
 	IsPersisted() bool
 	Link(string, AnyModel) error
+	To(string) *query
 }
 
 /* For now empty, but soon will gather the funtionalities
@@ -45,47 +46,10 @@ func (bm BaseModel) IsPersisted() bool {
 	return bm.Persisted
 }
 
-func getInverse(attr string, other AnyModel) string {
-	inverse, ok := createTableFromModel(other)[0].reverses[attr]
-
-	if ok {
-		return inverse
-	} else {
-		return ""
-	}
+func (bm BaseModel) Link(attr string, target AnyModel) error {
+	return Link(bm, attr, target)
 }
 
-func (bm BaseModel) Link(attr string, other AnyModel) error {
-	otherId := other.GetId()
-	otherClass := other.GetClass()
-
-	selectSql := "SELECT COUNT(*) FROM _Links WHERE " +
-		"OriginClass=? AND TargetClass=? AND OriginId=? AND TargetId=? AND Attr=?"
-	row := GetDb().QueryRow(selectSql, bm.Class, otherClass, bm.Id, otherId, attr)
-
-	var count uint
-	err := row.Scan(&count)
-	if err != nil {
-		return err
-	}
-
-	// Insert only if link does not exists already
-	if count == 0 {
-		inverse := getInverse(attr, other)
-
-		insertSql := "INSERT INTO _Links (OriginClass, OriginId, TargetClass, TargetId, Attr, Inverse) " +
-			"VALUES (?, ?, ?, ?, ?, ?)"
-
-		if inverse == "" {
-			_, err = GetDb().Exec(insertSql, bm.Class, otherClass, bm.Id, otherId, attr, nil)
-		} else {
-			_, err = GetDb().Exec(insertSql, bm.Class, otherClass, bm.Id, otherId, attr, inverse)
-		}
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (bm BaseModel) To(attr string) *query {
+	return All(bm.GetClass()).Filter("Id", "=", bm.GetId()).To(attr)
 }

@@ -113,6 +113,9 @@ type query struct {
 	rowNum    int
 	subQuery  *query // used for joins
 	joinQuery bool
+	linkQuery bool
+	subId     string
+	subAttr   string
 }
 
 /* Get data from database. The name is all because it
@@ -144,6 +147,8 @@ func (q *query) Clone() *query {
 	qCopy.current = q.current
 	qCopy.order = order{q.order.column, q.order.direction}
 	qCopy.filter = q.filter.Clone()
+	qCopy.subId = q.subId
+	qCopy.subAttr = q.subAttr
 
 	if q.subQuery != nil {
 		qCopy.subQuery = q.subQuery.Clone()
@@ -197,38 +202,24 @@ func (q *query) OrderBy(column string, direction_ ...int) *query {
 	return nq
 }
 
-func (q *query) getLinkedTable(column string) string {
-	sql := "SELECT TargetClass FROM _Links WHERE ModelClass='" +
-		q.tableName + "' AND Attr='" + column + "'"
+func (q *query) To(attr string) *query {
+	link := GetLinkInfo(q.tableName, attr)
+	targetClass := link.Target
 
-	row := GetDb().QueryRow(sql)
+	nq := All(targetClass)
+	nq.subQuery = q.Clone()
+	nq.subAttr = attr
 
-	var class string
-
-	err := row.Scan(&class)
-	if err != nil {
-		panic(err)
-	}
-
-	return class
-}
-
-func (q *query) To(column string) *query {
 	// Check if we are in a loop. In that case we have to return
 	// a completely new query connected with the current object
 	if q.current != -1 {
-
+		nq.subId = q.rows[q.current]["Id"].(string)
+		nq.linkQuery = true
 	} else {
-		otherClass := q.getLinkedTable(column)
-
-		nq := All(otherClass)
 		nq.joinQuery = true
-		nq.subQuery = q.Clone()
-
-		return nq
 	}
 
-	return nil
+	return nq
 }
 
 func (q *query) computeQuery() (string, []interface{}) {
@@ -259,12 +250,21 @@ func (q *query) computeQuery() (string, []interface{}) {
 
 	var sql string
 	if q.joinQuery {
-		subSql, subArgs := q.subQuery.computeQuery()
+		subQ := q.subQuery
+		subSql, subArgs := subQ.computeQuery()
 		tempTableName := "tab" + xid.New().String()
 		sql = "SELECT " + q.tableName + ".* FROM (" + subSql + ") AS " + tempTableName +
-			" INNER JOIN _Links ON _Links.ModelId=" + tempTableName + ".Id INNER JOIN " +
+			" INNER JOIN _Links ON _Links.OriginId=" + tempTableName + ".Id AND " +
+			"_Links.OriginClass='" + subQ.tableName + "' AND _Links.TargetClass='" + q.tableName +
+			" AND _Links.Attr='" + q.subAttr + "' INNER JOIN " +
 			q.tableName + " ON _Links.TargetId=" + q.tableName + ".Id" + filters + orderLimitOffset + ";"
 		args = append(subArgs, args)
+	} else if q.linkQuery {
+		subQ := q.subQuery
+		sql = "SELECT " + q.tableName + ".* FROM _Links INNER JOIN " + q.tableName +
+			" ON _Links.OriginClass='" + subQ.tableName + "' AND _Links.OriginId='" + subQ.subId + "'.Id " +
+			" AND _Links.TargetClass='" + q.tableName + "' AND _Links.TargetId=" + q.tableName + ".Id " +
+			" AND _Links.Attr='" + q.subAttr + "'"
 	} else {
 		sql = "SELECT * FROM " + q.tableName + filters + orderLimitOffset + ";"
 	}

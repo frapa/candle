@@ -13,6 +13,7 @@ type AnyModel interface {
 	IsPersisted() bool
 	Link(string, AnyModel) error
 	To(string) *query
+	Delete() error
 }
 
 /* For now empty, but soon will gather the funtionalities
@@ -52,4 +53,8 @@ func (bm BaseModel) Link(attr string, target AnyModel) error {
 
 func (bm BaseModel) To(attr string) *query {
 	return All(bm.GetClass()).Filter("Id", "=", bm.GetId()).To(attr)
+}
+
+func (bm BaseModel) Delete() error {
+	return Delete(bm)
 }

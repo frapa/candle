@@ -17,8 +17,30 @@ func RegisterModel(name string, model AnyModel) {
 	schema.Tables[name] = createTableFromModel(model)
 }
 
-func UpdateSchema() {
+func GetTablesFromModelClass(class string) []*table {
+	return schema.Tables[class]
+}
 
+// SCHEMA BUILDING -------------------------------------------
+func GetDbTables() []string {
+	switch GetDriver() {
+	case SQLITE:
+		return GetSqliteDbTables()
+	}
+
+	panic("Missing database specific implementation of GetDbTables()")
+}
+
+func GetDbTableAttribs(table string) map[string]string {
+	switch GetDriver() {
+	case SQLITE:
+		return GetSqliteDbTableAttribs(table)
+	}
+
+	panic("Missing database specific implementation of GetDbTableAttribs()")
+}
+
+func UpdateSchema() {
 }
 
 // TABLES -----------------------------------------------------
@@ -107,6 +129,13 @@ func (t *table) getInsertSql(rec *record) (string, []interface{}) {
 	joinedVals := strings.Join(questionMarks, ", ")
 	sql := "INSERT INTO " + t.name + " (" + joinedCols + ") VALUES (" + joinedVals + ");"
 
+	return sql, strValues
+}
+
+func (t *table) getDeleteSql(rec *record) (string, []interface{}) {
+	var strValues []interface{}
+	strValues = append(strValues, rec.fields["Id"])
+	sql := "DELETE FROM " + t.name + " WHERE Id=?"
 	return sql, strValues
 }
 

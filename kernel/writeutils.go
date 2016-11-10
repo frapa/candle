@@ -31,7 +31,7 @@ func (r *record) copyColsFrom(others []*record) {
 	}
 }
 
-func createRecordFromModel(model AnyModel, topModelName_ ...string) []*record {
+func createRecordFromObject(model AnyModel, topModelName_ ...string) []*record {
 	var recs []*record
 
 	modelElem := reflect.Indirect(reflect.ValueOf(model))
@@ -53,7 +53,7 @@ func createRecordFromModel(model AnyModel, topModelName_ ...string) []*record {
 		fieldValue := modelElem.Field(i).Interface()
 		if field.Anonymous {
 			recs = append(recs,
-				createRecordFromModel(fieldValue.(AnyModel), topModelName)...)
+				createRecordFromObject(fieldValue.(AnyModel), topModelName)...)
 			rec.copyColsFrom(recs)
 			continue
 		}
@@ -80,7 +80,7 @@ func createRecordFromModel(model AnyModel, topModelName_ ...string) []*record {
 
 func Save(model AnyModel) error {
 	tabs := createTableFromModel(model)
-	recs := createRecordFromModel(model)
+	recs := createRecordFromObject(model)
 
 	for i, tab := range tabs {
 		rec := recs[i]

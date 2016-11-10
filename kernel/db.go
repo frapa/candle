@@ -5,6 +5,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const (
+	SQLITE = 101
+)
+
 var db *sql.DB
 
 func init() {
@@ -21,4 +25,8 @@ func initDatabase(file string) {
 
 func GetDb() *sql.DB {
 	return db
+}
+
+func GetDriver() int {
+	return SQLITE
 }

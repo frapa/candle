@@ -25,7 +25,9 @@ func int63() int64 {
 	return v
 }
 
-func RandStringBytesMaskImprSrc(n int) string {
+// generates a random string of a fixed length
+// original name 'RandStringBytesMaskImprSrc'
+func RandStringFixedLength(n int) string {
 	// default n := 10
 	b := make([]byte, n)
 	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!

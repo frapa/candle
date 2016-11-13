@@ -12,9 +12,7 @@ type User struct {
 	UserName string
 	Salt     string
 	PswHash  string
-	//	CreatedOn time.Time  // ho commentato perché credo che metteró un CreationDate in Model, che
-	//	dovrebbe valere per qualsiasi modello. XXX rimuovi, tentiamo di tenere il codice pulito se
-	//	possibile, io non lo faccio perché non so bene se é tutto a posto oppure no [pasa]
+	//	CreatedOn time.Time  // CreationDate in Model definition?
 	LastLog time.Time
 }
 
@@ -28,7 +26,7 @@ func NewUser(name string, psw string) *User {
 	u.UserName = name
 
 	// XXX metti un nome un poco piú chiaro se riesci, poi rimuovi i commenti [pasa]
-	u.Salt = RandStringBytesMaskImprSrc(saltLen) // XXX bel nome per una funzione! Io non so che fa, se non l'ho scritta...
+	u.Salt = RandStringFixedLength(saltLen) // XXX bel nome per una funzione! Io non so che fa, se non l'ho scritta...
 	u.PswHash = pswToHash(psw, u.Salt)
 
 	//u.CreatedOn = time.Now().UTC()
@@ -37,17 +35,15 @@ func NewUser(name string, psw string) *User {
 	return u
 }
 
+// generate Hash from password string
 func pswToHash(psw string, salt string) string {
-	// XXX da un occhiata al 4096, credo sia la lunghezza (in bit?) della stringa
-	// meglio se non é proprio 1 KB per password.
-	// dovrebbe essere il numero di iterazioni di hash: eg. hash(hash(hash(...hash(salt||psw) ...)))
-	// XXX Se sei sicuro che tutto funzioni, rimuovi i commenti [pasa]
 	ByteHash := pbkdf2.Key([]byte(psw), []byte(salt), 4096, 32, sha512.New)
 	hash := string(ByteHash[:32])
 
 	return hash
 }
 
+// check password to login
 func LogIn(name string, psw string) {
 	var u User
 	All("User").Filter("UserName", "=", name).Get(&u)

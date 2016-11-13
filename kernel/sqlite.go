@@ -30,10 +30,11 @@ func GetSqliteDbTableAttribs(table string) map[string]string {
 	attribs := make(map[string]string)
 	for rows.Next() {
 		var trash string
+		var trashInt interface{}
 		var attr string
 		var type_ string
 		if err := rows.Scan(&trash, &attr, &type_,
-			&trash, &trash, &trash); err != nil {
+			&trash, &trashInt, &trash); err != nil {
 			panic(err)
 		}
 
@@ -41,4 +42,19 @@ func GetSqliteDbTableAttribs(table string) map[string]string {
 	}
 
 	return attribs
+}
+
+func GetSqliteDbType(type_ string) string {
+	switch type_ {
+	case "string":
+		return "TEXT"
+	case "Time":
+		return "TEXT"
+	case "int", "int64":
+		return "INTEGER"
+	case "float32", "float64":
+		return "REAL"
+	}
+
+	return ""
 }

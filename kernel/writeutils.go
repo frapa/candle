@@ -61,13 +61,13 @@ func createRecordFromObject(model AnyModel, topModelName_ ...string) []*record {
 		fieldName := field.Name
 		tag := field.Tag
 
-		if tag != "nodb" && field.Type.Kind().String() != "struct" {
+		if tag != "nodb" {
 			if tag == "class" {
 				rec.addCol(fieldName, reflect.ValueOf(topModelName))
 			} else {
 				if fieldName == "Id" && fieldValue.(string) == "" {
 					fmt.Println("WARNING: trying to save '" + topModelName +
-						"' without Id. Maybe constructor missing?")
+						"' without Id. Maybe call to constructor missing?")
 				}
 
 				rec.addCol(fieldName, fieldValue)
@@ -98,6 +98,7 @@ func Save(model AnyModel) error {
 		//fmt.Println(sql, args)
 		_, err := GetDb().Exec(sql, args...)
 		if err != nil {
+			fmt.Println("ERROR:", err)
 			return err
 		}
 	}

@@ -15,9 +15,9 @@ const (
 	ATTR    = 99
 	AND     = 100
 	OR      = 101
-	INC     = 102
-	DEC     = 103
-	ISO8601 = "2006-01-02 15:04:05"
+	ASC     = 102
+	DESC    = 103
+	ISO8601 = "2006-01-02 15:04:05.000"
 )
 
 // FILTER -----------------------------------------------------------
@@ -32,7 +32,7 @@ type filter struct {
 // for internal usage
 func newParentFilter(filters []filter, type_ int) filter {
 	f := *new(filter)
-	f.type_ = AND
+	f.type_ = type_
 
 	for _, sf := range filters {
 		f.subFilters = append(f.subFilters, sf)
@@ -193,7 +193,7 @@ func (q *query) Offset(offset int) *query {
 func (q *query) OrderBy(column string, direction_ ...int) *query {
 	nq := q.Clone()
 
-	direction := INC
+	direction := ASC
 	if len(direction_) > 0 {
 		direction = direction_[0]
 	}
@@ -235,7 +235,7 @@ func (q *query) computeQuery() (string, []interface{}) {
 	orderLimitOffset := ""
 	if q.order.column != "" {
 		orderLimitOffset += " ORDER BY " + q.order.column
-		if q.order.direction == INC {
+		if q.order.direction == ASC {
 			orderLimitOffset += " ASC"
 		} else {
 			orderLimitOffset += " DESC"
@@ -286,6 +286,10 @@ func (q *query) Next() bool {
 	} else {
 		return false
 	}
+}
+
+func (q *query) Current() int {
+	return q.current
 }
 
 /* This is really magic. "Lasciate ogni speranza o voi che entrate"
@@ -366,12 +370,14 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 			if type_ == "string" {
 				value = reflect.ValueOf(fmt.Sprintf("%s", iValue))
 			} else if type_ == "Time" {
-				time, err := time.Parse(ISO8601,
+				time_, err := time.Parse(ISO8601,
 					fmt.Sprintf("%s", iValue))
 				if err != nil {
-					panic(err)
+					// It means the field is empty or nil - invalid or no date
+					value = reflect.ValueOf(time.Time{})
+				} else {
+					value = reflect.ValueOf(time_)
 				}
-				value = reflect.ValueOf(time)
 			}
 
 			fieldValue.Set(value)
@@ -380,14 +386,14 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 }
 
 func (q *query) Get(str interface{}) {
-	var nq *query
+	nq := q
 	if q.current == -1 {
 		nq = q.Limit(1)
 		nq.Next()
 	}
 
 	if nq.current >= nq.rowNum {
-		fmt.Println("WARNING: trying to get non-existant model")
+		fmt.Println("WARNING: trying to get non-existant object")
 		return
 	}
 

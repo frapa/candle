@@ -25,6 +25,10 @@ type BaseModel struct {
 	Persisted bool   `nodb`  // is it already in the db?
 }
 
+func init() {
+	RegisterModel(BaseModel{})
+}
+
 // Constructor initilizes basic model
 func NewBaseModel() *BaseModel {
 	baseModel := new(BaseModel)
@@ -48,7 +52,7 @@ func (bm BaseModel) IsPersisted() bool {
 }
 
 func (bm BaseModel) Link(attr string, target AnyModel) error {
-	return Link(bm, attr, target)
+	return Link(bm, attr, target, true)
 }
 
 func (bm BaseModel) To(attr string) *query {

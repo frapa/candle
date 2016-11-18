@@ -1,52 +1,85 @@
 package kernel
 
 import (
-	"ripple"
+	"github.com/laurent22/ripple"
+	"net/http"
 )
 
+// --- Resource registration --- //
+
 type RestResource struct {
-	
+	modelName string
+}
+
+func NewRestResource(modelName string) *RestResource {
+	m := new(RestResource)
+	m.modelName = modelName
+	return m
 }
 
 type RestResourceList struct {
-	List map[string][]*RestResource
+	Models map[string]*RestResource
 }
 
-var restResources RestResource
+var restResources RestResourceList
 
 func RegisterResource(model AnyModel) {
-	if restResources.List == nil {
-		restResources.List = make(map[string][]*RestResource)
+	if restResources.Models == nil {
+		restResources.Models = make(map[string]*RestResource)
 	}
 
-	name := GetModelName(model)
-	restResources.List[name] = createTableFromModel(model)
+	modelName := GetModelName(model)
+	restResources.Models[modelName] = NewRestResource(modelName)
 }
 
-// --- Rest Server --- //
+// --- Init function --- //
 
-type RestController struct {
-	
+func StartRestServer(port string) {
+	app := ripple.NewApplication()
+
+	// Create a controller and register it.
+	restController := new(GenericRestController)
+	app.RegisterController("rest", restController)
+
+	// Setup the routes. The special patterns `_controller` will automatically match
+	// an existing controller, as defined above. Likewise, `_action` will match any
+	// existing action.
+	app.AddRoute(ripple.Route{Pattern: "/:_controller/:model"})
+	app.AddRoute(ripple.Route{Pattern: "/:_controller/:model/:id"})
+
+	// Start the server
+	http.ListenAndServe(port, app)
 }
 
-func StartRestServer() {
-    app := ripple.NewApplication()
+// --- Rest server --- //
 
-    // Create a controller and register it. Any number of controllers
-    // can be registered that way.
-
-    var restController RestController
-    app.RegisterController("rest", restController)
-
-    // Setup the routes. The special patterns `_controller` will automatically match
-    // an existing controller, as defined above. Likewise, `_action` will match any 
-    // existing action.
-
-    app.AddRoute(ripple.Route{ Pattern: "_rest/:model/" })
-    app.AddRoute(ripple.Route{ Pattern: "_rest/:model/:id" })
-
-    // Start the server
-
-    http.ListenAndServe(":443", app)
-
+type GenericRestController struct {
 }
+
+func (c *GenericRestController) Get(ctx *ripple.Context) {
+	modelName := ctx.Params["model"]
+	id := ctx.Params["id"]
+
+	if id == "" {
+		// All models where requested
+
+	} else {
+		// Only a specific model was requested
+	}
+
+	ctx.Response.Body = modelName + " " + id
+}
+
+func (c *GenericRestController) Post(ctx *ripple.Context) {
+	println("Post")
+}
+
+func (c *GenericRestController) Put(ctx *ripple.Context) {
+	println("put")
+}
+
+func (c *GenericRestController) Del(ctx *ripple.Context) {
+	println("delete")
+}
+
+// --- Helper function --- //

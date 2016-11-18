@@ -3,6 +3,7 @@
 *.a
 *.so
 testing/app
+build/app
 
 # Folders
 _obj
@@ -33,3 +34,4 @@ _testmain.go
 
 # db
 testing/db.sqlite
+build/db.sqlite

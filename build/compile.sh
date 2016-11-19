@@ -17,6 +17,7 @@ go build ${APP_MODULE}
 if [ ! -d ${BUILD}/static ]
 then
     mkdir ${BUILD}/static
+    mkdir ${BUILD}/static/models
 fi
 
 if [ ! -f ${APP}/modules.txt ] 

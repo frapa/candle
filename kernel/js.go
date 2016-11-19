@@ -55,8 +55,8 @@ func bindTemplate(path string, content []byte) []byte {
 	return []byte(templated)
 }
 
-func compact(folders []string, ext string, outFile string,
-	minify func([]byte) []byte, editFunc ...func(string, string, []byte) []byte) {
+func compact(folders []string, ext string, minify func([]byte) []byte,
+	editFunc ...func(string, string, []byte) []byte) []byte {
 	var compacted []byte
 
 	// Function which minifies and adds files together
@@ -95,11 +95,7 @@ func compact(folders []string, ext string, outFile string,
 		}
 	}
 
-	// Write output file
-	err := ioutil.WriteFile(outFile, compacted, 0644)
-	if err != nil {
-		panic(err)
-	}
+	return compacted
 }
 
 func minifyCss(cssCode []byte) []byte {
@@ -108,7 +104,7 @@ func minifyCss(cssCode []byte) []byte {
 
 func compactCss() {
 	folders := []string{"./static/css"}
-	compact(folders, "css", "./static/concat.css", minifyCss)
+	concatCss = compact(folders, "css", minifyCss)
 }
 
 func minifyJs(jsCode []byte) []byte {
@@ -123,7 +119,7 @@ func minifyJs(jsCode []byte) []byte {
 // Puts all javascript in a single minified file
 func compactJs() {
 	folders := []string{"./static/libs", "./static/engine",
-		"./static/views", "./static/js"}
+		"./static/models", "./static/views", "./static/js"}
 
 	bindTemplatesToViews := func(folder string, path string, content []byte) []byte {
 		if folder == "./static/views" {
@@ -132,7 +128,17 @@ func compactJs() {
 		return content
 	}
 
-	compact(folders, "js", "./static/concat.js", minifyJs, bindTemplatesToViews)
+	concatJs = compact(folders, "js", minifyJs, bindTemplatesToViews)
+}
+
+func writeBackboneClasses() {
+	path := "./static/models/models.js"
+	code := []byte(GenerateBackboneClasses())
+
+	err := ioutil.WriteFile(path, code, 0644)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func GenerateIndex(title string) {
@@ -142,6 +148,7 @@ func GenerateIndex(title string) {
 	html += "<title>" + title + "</title>"
 
 	// add scripts
+	writeBackboneClasses()
 	compactJs()
 	html += "<script src=\"concat.js\"></script>"
 
@@ -152,8 +159,5 @@ func GenerateIndex(title string) {
 	// finish off
 	html += "</head><body id=\"app\"><subview name=\"app\"></body></html>"
 
-	err := ioutil.WriteFile("./static/index.html", []byte(html), 0644)
-	if err != nil {
-		panic(err)
-	}
+	index = []byte(html)
 }

@@ -103,19 +103,20 @@ type order struct {
 
 // QUERY -----------------------------------------------------------
 type query struct {
-	tableName string
-	filter    filter
-	limit     uint
-	offset    int
-	order     order
-	current   int
-	rows      []map[string]interface{}
-	rowNum    int
-	subQuery  *query // used for joins
-	joinQuery bool
-	linkQuery bool
-	subId     string
-	subAttr   string
+	tableName     string
+	filter        filter
+	limit         uint
+	offset        int
+	order         order
+	current       int
+	rows          []map[string]interface{}
+	rowNum        int
+	subQuery      *query // used for joins
+	joinQuery     bool
+	linkQuery     bool
+	subId         string
+	subAttr       string
+	dataRetrieved bool
 }
 
 /* Get data from database. The name is all because it
@@ -273,7 +274,7 @@ func (q *query) computeQuery() (string, []interface{}) {
 }
 
 func (q *query) Next() bool {
-	if q.current == -1 {
+	if !q.dataRetrieved {
 		err := q.retrieveData()
 		if err != nil {
 			panic(err)
@@ -286,6 +287,17 @@ func (q *query) Next() bool {
 	} else {
 		return false
 	}
+}
+
+func (q *query) Count() int {
+	if !q.dataRetrieved {
+		err := q.retrieveData()
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return q.rowNum
 }
 
 func (q *query) Current() int {
@@ -336,6 +348,7 @@ func (q *query) retrieveData() error {
 		return err
 	}
 
+	q.dataRetrieved = true
 	return nil
 }
 

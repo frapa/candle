@@ -1,0 +1,20 @@
+table {
+    width: 100%;
+    background: white;
+    border: 1px solid #dbdbdb;
+    border-top: 0.15em solid #c53440;
+    border-collapse: collapse;
+}
+
+thead
+
+th {
+    text-align: left;
+    padding: 0.25em 0.75em;
+    border-bottom: 1px solid #dbdbdb;
+    font-variant: small-caps;
+}
+
+td {
+    padding: 0.25em 0.75em;
+}

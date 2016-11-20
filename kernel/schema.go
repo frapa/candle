@@ -234,6 +234,14 @@ func (t *table) addCol(col string, type_ string) {
 	t.fields[col] = type_
 }
 
+func (t *table) hasField(col string) bool {
+	if _, ok := t.fields[col]; ok {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (t *table) copyColsFrom(others []*table) {
 	for _, rec := range others {
 		for k, v := range rec.fields {

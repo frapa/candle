@@ -1,30 +1,95 @@
 package kernel
 
 import (
+	"errors"
 	"github.com/frapa/ripple"
 	"net/http"
 	"reflect"
+	"strings"
 )
 
-// --- Resource registration --- //
+// --- Resources --- //
 
 type RestResource struct {
-	modelName string
-	modelType reflect.Type
+	modelName    string
+	modelType    reflect.Type
+	modelPackage string
+	constructor  interface{}
 }
 
-func NewRestResource(model AnyModel, modelName string) *RestResource {
+func NewRestResource(model AnyModel, modelName string, constructor interface{}) *RestResource {
 	m := new(RestResource)
 	m.modelName = modelName
+	m.constructor = constructor
 
 	m.modelType = reflect.ValueOf(model).Type()
+	tockens := strings.Split(m.modelType.PkgPath(), "/")
+	m.modelPackage = tockens[len(tockens)-1]
 
 	return m
 }
 
-func (rr *RestResource) NewInstance() interface{} {
-	return reflect.New(rr.modelType).Interface()
+func (rr *RestResource) NewInstance() AnyModel {
+	return reflect.New(rr.modelType).Interface().(AnyModel)
 }
+
+func (rr *RestResource) GetPackageName() string {
+	packageName := rr.modelPackage
+	if packageName == "main" {
+		packageName = "App"
+	} else {
+		// Make sure first letter is capitalized
+		packageName = strings.ToTitle(string(packageName[0])) +
+			packageName[1:]
+	}
+	return packageName
+}
+
+func MatchResource(ctx *ripple.Context) (*RestResource, bool) {
+	modelName := ctx.Params["model"]
+
+	if resource, ok := restResources.Models[modelName]; ok {
+		return resource, true
+	} else {
+		NewRestError("Resource '" + modelName +
+			"' does not exist.").Send(ctx)
+		return nil, false
+	}
+}
+
+func GetLinkedResource(modelName string, q *query, linkName string) ([]AnyModel, error) {
+	// First check that the link exists
+	if info, ok := linkTable[modelName][linkName]; ok {
+		// Then check that the corresponding resource exists
+		// Without this it would be possible to retrieve linked
+		// but unregistered models, a serious security hole!
+		if targetResource, ok := restResources.Models[info.Target]; ok {
+			// All models where requested
+			targetModels := q.To(linkName)
+
+			// Check if collection is empty
+			if targetModels.Count() == 0 {
+				return []AnyModel{}, nil
+			} else {
+				var collection []AnyModel
+				for targetModels.Next() {
+					targetModel := targetResource.NewInstance()
+					targetModels.Get(targetModel)
+					collection = append(collection, targetModel)
+				}
+
+				return collection, nil
+			}
+		} else {
+			return []AnyModel{}, errors.New("Linked class in not registered as rest resource")
+		}
+	} else {
+		println(modelName, " ", linkName)
+		return []AnyModel{}, errors.New("Link does not exist")
+	}
+}
+
+// --- Resource list --- //
 
 type RestResourceList struct {
 	Models map[string]*RestResource
@@ -33,21 +98,19 @@ type RestResourceList struct {
 var restResources RestResourceList
 var app *ripple.Application = ripple.NewApplication()
 
-func RegisterRestResource(model AnyModel) {
+// --- Resource registration --- //
+
+func RegisterRestResource(model AnyModel, constructor interface{}) {
 	if restResources.Models == nil {
 		restResources.Models = make(map[string]*RestResource)
 	}
 
 	modelName := GetModelName(model)
 	restResources.Models[modelName] =
-		NewRestResource(model, modelName)
+		NewRestResource(model, modelName, constructor)
 }
 
 // --- Init function --- //
-
-func init() {
-
-}
 
 func StartRestServer() {
 	// This makes sure json is returned gzipped whenever possible
@@ -62,6 +125,7 @@ func StartRestServer() {
 	// existing action.
 	app.AddRoute(ripple.Route{Pattern: "/api/:model", Controller: "rest"})
 	app.AddRoute(ripple.Route{Pattern: "/api/:model/:id", Controller: "rest"})
+	app.AddRoute(ripple.Route{Pattern: "/api/:model/:id/:link", Controller: "rest"})
 
 	// Start the server
 	http.HandleFunc("/api/", app.ServeHTTP)
@@ -81,16 +145,37 @@ func (c *GenericRestController) Authenticate(ctx *ripple.Context) bool {
 	return true
 }
 
-func (c *GenericRestController) MatchResource(ctx *ripple.Context) (*RestResource, bool) {
+func (c *GenericRestController) ApplyQueryParameters(q *query, ctx *ripple.Context) *query {
 	modelName := ctx.Params["model"]
+	table := GetTablesFromModelClass(modelName)[0]
 
-	if resource, ok := restResources.Models[modelName]; ok {
-		return resource, true
-	} else {
-		NewRestError("Resource '" + modelName +
-			"' does not exist.").Send(ctx)
-		return nil, false
+	nq := q.Clone()
+
+	for key, value := range ctx.GetQuery() {
+		if key != "user" && key != "psw" {
+			if len(value) == 1 && len(value[0]) == 0 {
+				// For now I support < and >
+				if strings.Contains(key, "<") {
+					tockens := strings.Split(key, "<")
+					if table.hasField(tockens[0]) {
+						nq = nq.Filter(tockens[0], "<", tockens[1])
+					}
+				} else if strings.Contains(key, ">") {
+					tockens := strings.Split(key, ">")
+					if table.hasField(tockens[0]) {
+						nq = nq.Filter(tockens[0], ">", tockens[1])
+					}
+				}
+			} else {
+				// Then it is a = filter
+				if table.hasField(key) {
+					nq = nq.Filter(key, "=", value[0])
+				}
+			}
+		}
 	}
+
+	return nq
 }
 
 func (c *GenericRestController) Get(ctx *ripple.Context) {
@@ -100,17 +185,19 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 
 	modelName := ctx.Params["model"]
 	id := ctx.Params["id"]
+	link := ctx.Params["link"]
 
-	if resource, ok := c.MatchResource(ctx); ok {
+	if resource, ok := MatchResource(ctx); ok {
 		if id == "" {
 			// All models where requested
-			models := All(resource.modelName)
+			unfilteredModels := All(resource.modelName)
+			models := c.ApplyQueryParameters(unfilteredModels, ctx)
 
 			// Check if collection is empty
 			if models.Count() == 0 {
 				ctx.Response.Body = "[]"
 			} else {
-				var collection []interface{}
+				var collection []AnyModel
 				for models.Next() {
 					model := resource.NewInstance()
 					models.Get(model)
@@ -119,7 +206,7 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 
 				ctx.Response.Body = collection
 			}
-		} else {
+		} else if link == "" {
 			// Only a specific model was requested
 			model := resource.NewInstance()
 			matchingModel := All(resource.modelName).Filter("Id", "=", id)
@@ -132,12 +219,41 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 				matchingModel.Get(model)
 				ctx.Response.Body = model
 			}
+		} else {
+			// A linked model was requested
+			matchingModel := All(resource.modelName).Filter("Id", "=", id)
+
+			// Check if requested id exists
+			if matchingModel.Count() == 0 {
+				NewRestError("There is no '" + modelName +
+					"' with id '" + id + "'.").Send(ctx)
+			} else {
+				collection, err := GetLinkedResource(modelName, matchingModel, link)
+				if err != nil {
+					println(err.Error())
+					NewRestError("There is no relation '" + link +
+						"' for model '" + modelName + "'").Send(ctx)
+				} else {
+					ctx.Response.Body = collection
+				}
+			}
 		}
 	}
 }
 
 func (c *GenericRestController) Post(ctx *ripple.Context) {
-	println("Post")
+	if !c.Authenticate(ctx) {
+		return
+	}
+
+	if resource, ok := MatchResource(ctx); ok {
+		constructor := reflect.ValueOf(resource.constructor)
+		model := constructor.Call(nil)[0].Interface().(AnyModel)
+		Save(model)
+
+		ctx.Response.Status = http.StatusCreated
+		ctx.Response.Body = model
+	}
 }
 
 func (c *GenericRestController) Put(ctx *ripple.Context) {

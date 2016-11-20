@@ -253,13 +253,17 @@ func (q *query) computeQuery() (string, []interface{}) {
 	if q.joinQuery {
 		subQ := q.subQuery
 		subSql, subArgs := subQ.computeQuery()
-		tempTableName := "tab" + xid.New().String()
+		tempTableName := "tab_" + xid.New().String()
+
+		// remove trailing ; in subSql
+		subSql = subSql[:len(subSql)-1]
+
 		sql = "SELECT " + q.tableName + ".* FROM (" + subSql + ") AS " + tempTableName +
 			" INNER JOIN _Links ON _Links.OriginId=" + tempTableName + ".Id AND " +
 			"_Links.OriginClass='" + subQ.tableName + "' AND _Links.TargetClass='" + q.tableName +
-			" AND _Links.Attr='" + q.subAttr + "' INNER JOIN " +
+			"' AND _Links.Attr='" + q.subAttr + "' INNER JOIN " +
 			q.tableName + " ON _Links.TargetId=" + q.tableName + ".Id" + filters + orderLimitOffset + ";"
-		args = append(subArgs, args)
+		args = append(subArgs, args...)
 	} else if q.linkQuery {
 		subQ := q.subQuery
 		sql = "SELECT " + q.tableName + ".* FROM _Links INNER JOIN " + q.tableName +

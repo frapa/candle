@@ -1,41 +1,52 @@
 var AbstractView = Backbone.View.extend({
-    render: function () {
+    render: function (templateObj) {
         if (this.template !== undefined) {
-            var templateObj = {};
-            if (this.hasOwnProperty('model')) {
-                templateObj = this.model.toJSON();
-            } else if (this.hasOwnProperty('collection')) {
-                templateObj = this.collection.toJSON();
-            }
+            if (templateObj === undefined) {
+                templateObj = {}
+                if (this.hasOwnProperty('model')) {
+                    templateObj = this.model.toJSON();
+                } else if (this.hasOwnProperty('collection')) {
+                    templateObj = this.collection.toJSON();
+                }
+            } 
 
             this.setElement(this.template(templateObj));
+
+            if (this.subviews === undefined) {
+                this.subviews = {};
+            }
             _.each(this.subviews, this.injectSubview.bind(this));
+        } else {
+            console.info("TEMPLATE NOT FOUND");
         }
         
+        this.rendered = true;
         return this;
     },
 
     injectSubview: function (view, subview) {
-        $subview = this.$('subview[name="' + subview + '"]');
+        var $subview = this.$('subview[name="' + subview + '"]');
 
         if ($subview.length) {
-            $subview.replaceWith(view.render().$el);
+            view.render()
+            $subview.replaceWith(view.$el);
         } else {
             console.error("View '" + subview + "' not found in template.");
         }
     },
 
     open: function(view, subview) {
-        if (!this.hasOwnProperty('subviews')) {
+        if (this.subviews === undefined) {
             this.subviews = {};
         }
 
-        currentView = this.subviews[subview];
+        var currentView = this.subviews[subview];
 
-        if (currentView && currentView.$el !== undefined) {
+        if (currentView && currentView.rendered) {
             // we already generated some html for this view.
             // we need to clean it up before going on.
-            currentView.$el.replaceWith(view.render().$el);
+            view.render()
+            currentView.$el.replaceWith(view.$el);
             currentView.remove();
         } else {
             this.injectSubview(view, subview);
@@ -45,10 +56,10 @@ var AbstractView = Backbone.View.extend({
     },
 
     close: function(subview) {
-        if (!this.hasOwnProperty('subviews')) {
+        if (this.subviews === undefined) {
             this.subviews = {};
         }
-        view = this.subviews[subview];
+        var view = this.subviews[subview];
 
         if (view && view.$el !== undefined) {
             view.remove();

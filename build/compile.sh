@@ -18,6 +18,7 @@ if [ ! -d ${BUILD}/static ]
 then
     mkdir ${BUILD}/static
     mkdir ${BUILD}/static/models
+    mkdir ${BUILD}/static/collections
 fi
 
 if [ ! -f ${APP}/modules.txt ] 
@@ -27,7 +28,7 @@ then
 fi
 
 # List of folders to be copied
-FOLDERS=(engine views libs js css templates)
+FOLDERS=(engine views libs js css templates models collections)
 
 # Copy index.html
 #cp ${CANDLE}/kernel/static/index.html ${BUILD}/static/

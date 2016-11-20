@@ -11,6 +11,12 @@ import (
 	"strings"
 )
 
+var jsCompressionEnabled bool
+var backboneClassesAdded bool
+
+type minFunc func([]byte) []byte
+type middleFunc func(string, string, []byte) []byte
+
 func escapeSlashes(str string) string {
 	return strings.Replace(str, "\\", "\\\\", -1)
 }
@@ -22,7 +28,7 @@ func escapeQuotes(str string) string {
 var re *regexp.Regexp
 
 func init() {
-	re = regexp.MustCompile("^var\\s*([A-Za-z_][A-Za-z0-9_\\.]+)\\s*=\\s*([A-Za-z_][A-Za-z0-9_\\.]+)\\.extend\\s*\\(\\s*{")
+	re = regexp.MustCompile("(?m)^\\s*var\\s*([A-Za-z_][A-Za-z0-9_\\.]+)\\s*=\\s*([A-Za-z_][A-Za-z0-9_\\.]+)\\.extend\\s*\\(\\s*{")
 }
 
 // Automatically add template as a string in javascript
@@ -55,8 +61,7 @@ func bindTemplate(path string, content []byte) []byte {
 	return []byte(templated)
 }
 
-func compact(folders []string, ext string, minify func([]byte) []byte,
-	editFunc ...func(string, string, []byte) []byte) []byte {
+func compact(folders []string, ext string, minify minFunc, editFunc ...middleFunc) []byte {
 	var compacted []byte
 
 	// Function which minifies and adds files together
@@ -67,7 +72,9 @@ func compact(folders []string, ext string, minify func([]byte) []byte,
 		}
 
 		if len(editFunc) > 0 {
-			content = editFunc[0](folder, path, content)
+			for _, f := range editFunc {
+				content = f(folder, path, content)
+			}
 		}
 
 		compacted = append(compacted, minify(content)...)
@@ -108,6 +115,10 @@ func compactCss() {
 }
 
 func minifyJs(jsCode []byte) []byte {
+	if !jsCompressionEnabled {
+		return jsCode
+	}
+
 	minified, err := jsmin.Minify(jsCode)
 	if err != nil {
 		panic(err)
@@ -119,7 +130,18 @@ func minifyJs(jsCode []byte) []byte {
 // Puts all javascript in a single minified file
 func compactJs() {
 	folders := []string{"./static/libs", "./static/engine",
-		"./static/models", "./static/views", "./static/js"}
+		"./static/models", "./static/collections",
+		"./static/views", "./static/js"}
+
+	insertBackboneClasses := func(folder string, path string, content []byte) []byte {
+		if !backboneClassesAdded && folder == "./static/models" {
+			backboneClassesAdded = true
+			content = append([]byte(GenerateBackboneLinks()), content...)
+			content = append([]byte(GenerateBackboneClasses()), content...)
+			return content
+		}
+		return content
+	}
 
 	bindTemplatesToViews := func(folder string, path string, content []byte) []byte {
 		if folder == "./static/views" {
@@ -128,17 +150,8 @@ func compactJs() {
 		return content
 	}
 
-	concatJs = compact(folders, "js", minifyJs, bindTemplatesToViews)
-}
-
-func writeBackboneClasses() {
-	path := "./static/models/models.js"
-	code := []byte(GenerateBackboneClasses())
-
-	err := ioutil.WriteFile(path, code, 0644)
-	if err != nil {
-		panic(err)
-	}
+	funcs := []middleFunc{insertBackboneClasses, bindTemplatesToViews}
+	concatJs = append(concatJs, compact(folders, "js", minifyJs, funcs...)...)
 }
 
 func GenerateIndex(title string) {
@@ -148,7 +161,7 @@ func GenerateIndex(title string) {
 	html += "<title>" + title + "</title>"
 
 	// add scripts
-	writeBackboneClasses()
+	concatJs = []byte("var " + title + " = {};")
 	compactJs()
 	html += "<script src=\"concat.js\"></script>"
 

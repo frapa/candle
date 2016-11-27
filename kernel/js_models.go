@@ -18,7 +18,7 @@ func GenerateBackboneClasses() string {
 			" = Relational_Model.extend({});"
 
 		jsCollection := "var " + packageName + "_Collection_" + modelName +
-			" = Backbone.Collection.extend({url: '/api/" +
+			" = QueryCollection.extend({url: '/api/" +
 			modelName + "', idAttribute: 'Id', model: " + jsModelName + "});"
 
 		jsCode += jsModel + jsCollection

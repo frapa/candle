@@ -6,6 +6,12 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
         this.childrenAttr = options.children;
         this.columns = options.columns;
 
+        // transform tooltips into tooltip ui components
+        this.actions = _.map(options.actions, function (action) {
+            action.tooltip = new Kernel_View_Ui_Tooltip(action.tooltip);
+            return action;
+        });
+
         this.renderData = {
             columns: this.columns,
             headerTemplate: _.template('<th><%= header %></th>')
@@ -26,11 +32,12 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
                     model: model,
                     children: []
                 };
+
                 array.push(modelObj);
 
                 numRemaining += 1
                 model.to(_this.childrenAttr).fetch({
-                    success: appendCollection.bind(null, modelObj, callback)
+                    success: appendCollection.bind(null, modelObj.children, callback)
                 });
             });
 
@@ -42,43 +49,48 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
         appendCollection(this.tree, callback, this.collection);
     },
 
-    render: function () {
-        AbstractView.prototype.render.call(this, this.renderData);
+    render: function (options) {
+        AbstractView.prototype.render.call(this, {
+            templateObj: this.renderData
+        });
 
         var _this = this;
         this.$tbody = this.$('tbody');
 
+        options.anmgr.waitForAction();
         this.collection.fetch({
             success: function () {
                 // Build tree structure
-                _this.buildTree(_this.renderRows.bind(_this));
+                _this.buildTree(_this.renderRows.bind(_this, options.anmgr));
             }
         });
         
         return this
     },
 
-    renderRows: function () {
+    renderRows: function (anmgr) {
         if (this.tree.length) {
             //_.invoke(this.rows, 'remove');
-            var $rows = this.tree.map(this.generateRow.bind(this));
+            var $rows = _.flatten(this.tree.map(this.generateRow.bind(this)), true);
             this.$tbody.append($rows);
         } else {
             var colNum = this.renderData.columns.length;
             var $tr = $('<tr><td colspan="' + colNum + '">The tree is empty</td></tr>');
             this.$tbody.append($tr);
         }
+        anmgr.notifyEnd();
     },
 
     generateRow: function (node) {
         var row = new Kernel_View_Ui_Treerow({
             model: node.model,
             children: node.children,
-            columns: this.columns
+            columns: this.columns,
+            actions: this.actions
         });
         this.rows.push(row);
 
         row.render();
-        return row.$el;
+        return [row.$el, row.$subRow];
     }
 });

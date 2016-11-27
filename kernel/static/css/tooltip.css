@@ -1,0 +1,15 @@
+.tooltip {
+    display: none;
+    position: absolute;
+}
+
+.tooltip-text {
+    position: relative;
+    left: -50%;
+    font-size: 90%;
+    padding: 0.25em 0.5em;
+    background: §primary-color;
+    color: §secondary-text-color;
+    white-space: nowrap;
+    border-radius: 0.1em;
+}

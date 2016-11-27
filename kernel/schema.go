@@ -10,6 +10,7 @@ import (
 
 type Schema struct {
 	Tables map[string][]*table
+	Types  map[string]reflect.Type
 }
 
 var schema Schema
@@ -17,14 +18,30 @@ var schema Schema
 func RegisterModel(model AnyModel) {
 	if schema.Tables == nil {
 		schema.Tables = make(map[string][]*table)
+		schema.Types = make(map[string]reflect.Type)
 	}
 
 	name := GetModelName(model)
 	schema.Tables[name] = createTableFromModel(model)
+	schema.Types[name] = reflect.ValueOf(model).Type()
 }
 
 func GetTablesFromModelClass(class string) []*table {
+	if _, ok := schema.Types[class]; !ok {
+		panic("Model '" + class + "' does not exist")
+	}
 	return schema.Tables[class]
+}
+
+// INSTANCES GENERATOR ---------------------------------------
+
+func NewInstanceOf(modelName string) AnyModel {
+	if _, ok := schema.Types[modelName]; !ok {
+		panic("Model '" + modelName + "' does not exist")
+	}
+
+	type_ := schema.Types[modelName]
+	return reflect.New(type_).Interface().(AnyModel)
 }
 
 // SCHEMA BUILDING -------------------------------------------

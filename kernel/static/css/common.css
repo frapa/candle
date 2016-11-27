@@ -1,0 +1,24 @@
+div.default-loading-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+span.default-loading-indicator {
+    display: inline-block;
+    font-size: 150%;
+}
+
+.animation-spin {
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform:rotate(0deg);
+    }
+    to {
+        transform:rotate(360deg);
+    }
+}

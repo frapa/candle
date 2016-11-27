@@ -31,6 +31,10 @@ func init() {
 	re = regexp.MustCompile("(?m)^\\s*var\\s*([A-Za-z_][A-Za-z0-9_\\.]+)\\s*=\\s*([A-Za-z_][A-Za-z0-9_\\.]+)\\.extend\\s*\\(\\s*{")
 }
 
+func identity(content []byte) []byte {
+	return content
+}
+
 // Automatically add template as a string in javascript
 func bindTemplate(path string, content []byte) []byte {
 	strContent := string(content)
@@ -111,7 +115,13 @@ func minifyCss(cssCode []byte) []byte {
 
 func compactCss() {
 	folders := []string{"./static/css"}
-	concatCss = compact(folders, "css", minifyCss)
+
+	preprocess := func(content []byte) []byte {
+		compiledCss := compileCss(content)
+		return minifyCss(compiledCss)
+	}
+
+	concatCss = preprocess(compact(folders, "css", identity))
 }
 
 func minifyJs(jsCode []byte) []byte {
@@ -170,7 +180,7 @@ func GenerateIndex(title string) {
 	html += "<link rel=\"stylesheet\" type=\"text/css\" href=\"concat.css\">"
 
 	// finish off
-	html += "</head><body id=\"app\"><subview name=\"app\"></body></html>"
+	html += "</head><body id=\"app\"><subview name=\"app\"></subview><subview name=\"dialog\"></subview></body></html>"
 
 	index = []byte(html)
 }

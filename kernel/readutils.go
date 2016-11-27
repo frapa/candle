@@ -133,6 +133,10 @@ type query struct {
  * And than filling manually your struct (boring).
  */
 func All(modelName string) *query {
+	if _, ok := schema.Tables[modelName]; !ok {
+		panic("Model '" + modelName + "' does not exist.")
+	}
+
 	q := new(query)
 	q.tableName = modelName
 	q.current = -1
@@ -306,6 +310,54 @@ func (q *query) Count() int {
 
 func (q *query) Current() int {
 	return q.current
+}
+
+func (q *query) GetAll() []AnyModel {
+	var collection []AnyModel
+
+	for q.Next() {
+		model := NewInstanceOf(q.tableName)
+		q.Get(model)
+		collection = append(collection, model)
+	}
+
+	return collection
+}
+
+func (q *query) GetIds() []string {
+	ids := []string{}
+
+	sql, args := q.computeQuery()
+	sql = strings.Replace(sql, "*", "Id", 1)
+
+	//fmt.Println(sql, args)
+	rows, err := GetDb().Query(sql, args...)
+	if err != nil {
+		panic(err)
+	}
+
+	for rows.Next() {
+		id := ""
+		err := rows.Scan(&id)
+		if err != nil {
+			panic(err)
+		}
+		ids = append(ids, id)
+	}
+
+	return ids
+}
+
+func (q *query) Exclude(ids []string) *query {
+	nq := q.Clone()
+
+	filters := []filter{}
+	for _, id := range ids {
+		filters = append(filters, F("Id", "!=", id))
+	}
+	nq.filter = And(filters...)
+
+	return nq
 }
 
 /* This is really magic. "Lasciate ogni speranza o voi che entrate"

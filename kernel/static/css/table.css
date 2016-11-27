@@ -1,20 +1,75 @@
+§primary-color: #c53440;
+§secondary-text-color: white;
+§border-color: #dbdbdb;
+§border-color-light: #ededed;
+
 table {
     width: 100%;
     background: white;
-    border: 1px solid #dbdbdb;
-    border-top: 0.15em solid #c53440;
+    border: 1px solid §border-color;
+    border-top: 0.15em solid §primary-color;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
-thead
+tr {
+    position: relative;
+}
 
 th {
     text-align: left;
-    padding: 0.25em 0.75em;
-    border-bottom: 1px solid #dbdbdb;
     font-variant: small-caps;
 }
 
-td {
+th, td {
     padding: 0.25em 0.75em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-bottom: 1px solid §border-color-light;
+}
+
+.unfold-indicator {
+    display: inline-block;
+    min-width: 1.4em;
+    font-size: 90%;
+    padding-right: 0.5em;
+    cursor: pointer;
+}
+
+.unfold-indicator:hover {
+    color: §primary-color;
+}
+
+tr.treeSubRow > td {
+    padding: 0; 
+    border: 0;
+}
+
+table.treeSubTable {
+    padding-left: 1.4em;
+    border: 0;
+}
+
+div.table-actions {
+    position: absolute;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    right: 1px;
+    top: 0;
+    bottom: 0;
+    padding-right: 0.5em;
+}
+
+tr:hover > td > div.table-actions {
+    display: flex;
+}
+
+span.table-action {
+    cursor: pointer;
+}
+
+span.table-action:hover {
+    color: §primary-color;
 }

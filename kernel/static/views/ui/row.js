@@ -3,7 +3,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
     initialize: function (options) {
         var _this = this;
-
+        
         this.columnData = _.map(options.columns, function (col) {
             var cellData = {};
 

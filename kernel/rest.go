@@ -12,7 +12,6 @@ import (
 
 type RestResource struct {
 	modelName    string
-	modelType    reflect.Type
 	modelPackage string
 	constructor  interface{}
 }
@@ -22,15 +21,11 @@ func NewRestResource(model AnyModel, modelName string, constructor interface{}) 
 	m.modelName = modelName
 	m.constructor = constructor
 
-	m.modelType = reflect.ValueOf(model).Type()
-	tockens := strings.Split(m.modelType.PkgPath(), "/")
+	modelType := reflect.ValueOf(model).Type()
+	tockens := strings.Split(modelType.PkgPath(), "/")
 	m.modelPackage = tockens[len(tockens)-1]
 
 	return m
-}
-
-func (rr *RestResource) NewInstance() AnyModel {
-	return reflect.New(rr.modelType).Interface().(AnyModel)
 }
 
 func (rr *RestResource) GetPackageName() string {
@@ -73,7 +68,7 @@ func GetLinkedResource(modelName string, q *query, linkName string) ([]AnyModel,
 			} else {
 				var collection []AnyModel
 				for targetModels.Next() {
-					targetModel := targetResource.NewInstance()
+					targetModel := NewInstanceOf(targetResource.modelName)
 					targetModels.Get(targetModel)
 					collection = append(collection, targetModel)
 				}
@@ -96,7 +91,7 @@ type RestResourceList struct {
 }
 
 var restResources RestResourceList
-var app *ripple.Application = ripple.NewApplication()
+var App *ripple.Application = ripple.NewApplication()
 
 // --- Resource registration --- //
 
@@ -114,21 +109,21 @@ func RegisterRestResource(model AnyModel, constructor interface{}) {
 
 func StartRestServer() {
 	// This makes sure json is returned gzipped whenever possible
-	app.EnableCompression()
+	App.EnableCompression()
 
 	// Create a controller and register it.
 	restController := new(GenericRestController)
-	app.RegisterController("rest", restController)
+	App.RegisterController("rest", restController)
 
 	// Setup the routes. The special patterns `_controller` will automatically match
 	// an existing controller, as defined above. Likewise, `_action` will match any
 	// existing action.
-	app.AddRoute(ripple.Route{Pattern: "/api/:model", Controller: "rest"})
-	app.AddRoute(ripple.Route{Pattern: "/api/:model/:id", Controller: "rest"})
-	app.AddRoute(ripple.Route{Pattern: "/api/:model/:id/:link", Controller: "rest"})
+	App.AddRoute(ripple.Route{Pattern: "/api/:model", Controller: "rest"})
+	App.AddRoute(ripple.Route{Pattern: "/api/:model/:id", Controller: "rest"})
+	App.AddRoute(ripple.Route{Pattern: "/api/:model/:id/:link", Controller: "rest"})
 
 	// Start the server
-	http.HandleFunc("/api/", app.ServeHTTP)
+	http.HandleFunc("/api/", App.ServeHTTP)
 }
 
 // --- Rest server --- //
@@ -197,18 +192,11 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 			if models.Count() == 0 {
 				ctx.Response.Body = "[]"
 			} else {
-				var collection []AnyModel
-				for models.Next() {
-					model := resource.NewInstance()
-					models.Get(model)
-					collection = append(collection, model)
-				}
-
-				ctx.Response.Body = collection
+				ctx.Response.Body = models.GetAll()
 			}
 		} else if link == "" {
 			// Only a specific model was requested
-			model := resource.NewInstance()
+			model := NewInstanceOf(resource.modelName)
 			matchingModel := All(resource.modelName).Filter("Id", "=", id)
 
 			// Check if requested id exists

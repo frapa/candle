@@ -1,0 +1,3 @@
+var loadingIndicators = {
+    empty: null,
+};

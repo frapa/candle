@@ -30,6 +30,10 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
 
         this.addButtons();
     },
+    
+    /*initListenersAfterRender: function () {
+		
+	},*/
 
     setTriangle: function (vloc, hloc) {
         if (vloc == 'n') {
@@ -107,6 +111,10 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
             _this.$el
                 .click(function () {
                     _this.close();
+                });
+            _this.$('.dialog')
+                .click(function (event) {
+                    event.stopPropagation();
                 });
             $(window)
                 .on('keypress', function (event) {

@@ -60,13 +60,19 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             var $actionButton = $('<span class="table-action"></span>');
 
             $actionButton.addClass(action.icon);
-            $actionButton.click(action.callback.bind({
-                $button: $actionButton,
-                row: _this,
-                rowData: _this.columnData,
-                model: _this.model,
-                childCollection: _this.childCollection
-            }));
+            
+            var wrapCallback = function (event) {
+				event.stopPropagation();
+				action.callback.apply({
+					$button: $actionButton,
+					row: _this,
+					rowData: _this.columnData,
+					model: _this.model,
+					childCollection: _this.childCollection
+				});
+			};
+			
+            $actionButton.click( wrapCallback);
 
             action.tooltip.openOnHover($actionButton);
 

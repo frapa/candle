@@ -97,7 +97,7 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
             }
         });
         
-        return this
+        return this;
     },
 
     renderRows: function (anmgr) {

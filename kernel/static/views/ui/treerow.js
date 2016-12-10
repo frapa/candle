@@ -179,7 +179,8 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
         var $row = $('<tr></tr>');
         $row.append(this.$cells);
         if (this.click) {
-            $row.click(this.click.bind(this, this.model));
+            var callback = this.click.bind(this, this.model);
+            $row.click(callback);
         }
 
         this.renderActions(_.last(this.$cells));
@@ -223,9 +224,10 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
         $indicator.css('margin-left', (level * 1.4) + 'em')
 
         var _this = this;
-        $indicator.click(function () {
+        $indicator.click(function (event) {
             $indicator.toggleClass('icon-down-open-mini icon-right-open-mini');
             _this.$subRow.toggle();
+            event.stopPropagation();
         });
 
         cell.prepend($indicator);

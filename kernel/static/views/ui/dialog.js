@@ -30,10 +30,6 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
 
         this.addButtons();
     },
-    
-    /*initListenersAfterRender: function () {
-		
-	},*/
 
     setTriangle: function (vloc, hloc) {
         if (vloc == 'n') {

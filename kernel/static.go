@@ -12,15 +12,9 @@ var fontello []byte
 var fontello2 []byte
 
 func indexHandler(writer http.ResponseWriter, request *http.Request) {
-	if request.URL.String() != "/" {
-		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
-		writer.WriteHeader(http.StatusNotFound)
-		writer.Write([]byte("404"))
-	} else {
-		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
-		writer.WriteHeader(http.StatusOK)
-		writer.Write(index)
-	}
+	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(index)
 }
 
 func javascriptHandler(writer http.ResponseWriter, request *http.Request) {
@@ -64,9 +58,9 @@ func loadResources() {
 func StartStaticServer() {
 	loadResources()
 
-	http.HandleFunc("/concat.js", javascriptHandler)
-	http.HandleFunc("/concat.css", cssHandler)
-	http.HandleFunc("/font/fontello.woff", fontHandler)
-	http.HandleFunc("/font/fontello.woff2", fontHandler)
+	http.HandleFunc("/static/concat.js", javascriptHandler)
+	http.HandleFunc("/static/concat.css", cssHandler)
+	http.HandleFunc("/static/font/fontello.woff", fontHandler)
+	http.HandleFunc("/static/font/fontello.woff2", fontHandler)
 	http.HandleFunc("/", indexHandler)
 }

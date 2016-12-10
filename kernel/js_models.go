@@ -5,6 +5,18 @@ import (
 	"strings"
 )
 
+func generateClassTypeMap(modelName string) string {
+	table := GetTablesFromModelClass(modelName)[0]
+
+	jsObject := "{"
+	for field, type_ := range table.fields {
+		jsObject += field + ":'" + type_ + "',"
+	}
+	jsObject += "}"
+
+	return jsObject
+}
+
 func GenerateBackboneClasses() string {
 	jsCode := ""
 
@@ -14,8 +26,10 @@ func GenerateBackboneClasses() string {
 		packageName := resource.GetPackageName()
 
 		jsModelName := packageName + "_Model_" + modelName
+		jsTypeMap := generateClassTypeMap(modelName)
 		jsModel := "var " + jsModelName +
-			" = Relational_Model.extend({});"
+			" = Relational_Model.extend({urlRoot: '/api/" + modelName +
+			"', idAttribute: 'Id', types:" + jsTypeMap + "});"
 
 		jsCollection := "var " + packageName + "_Collection_" + modelName +
 			" = QueryCollection.extend({url: '/api/" +
@@ -27,6 +41,7 @@ func GenerateBackboneClasses() string {
 	return jsCode
 }
 
+// This is done later to assure that the objects exist
 func GenerateBackboneLinks() string {
 	jsCode := ""
 

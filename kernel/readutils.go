@@ -262,20 +262,20 @@ func (q *query) computeQuery() (string, []interface{}) {
 		// remove trailing ; in subSql
 		subSql = subSql[:len(subSql)-1]
 
-		sql = "SELECT " + q.tableName + ".* FROM (" + subSql + ") AS " + tempTableName +
+		sql = "SELECT \"" + q.tableName + "\".* FROM (" + subSql + ") AS " + tempTableName +
 			" INNER JOIN _Links ON _Links.OriginId=" + tempTableName + ".Id AND " +
 			"_Links.OriginClass='" + subQ.tableName + "' AND _Links.TargetClass='" + q.tableName +
-			"' AND _Links.Attr='" + q.subAttr + "' INNER JOIN " +
-			q.tableName + " ON _Links.TargetId=" + q.tableName + ".Id" + filters + orderLimitOffset + ";"
+			"' AND _Links.Attr='" + q.subAttr + "' INNER JOIN \"" +
+			q.tableName + "\" ON _Links.TargetId=\"" + q.tableName + "\".Id" + filters + orderLimitOffset + ";"
 		args = append(subArgs, args...)
 	} else if q.linkQuery {
 		subQ := q.subQuery
-		sql = "SELECT " + q.tableName + ".* FROM _Links INNER JOIN " + q.tableName +
-			" ON _Links.OriginClass='" + subQ.tableName + "' AND _Links.OriginId='" + subQ.subId + "'.Id " +
-			" AND _Links.TargetClass='" + q.tableName + "' AND _Links.TargetId=" + q.tableName + ".Id " +
+		sql = "SELECT \"" + q.tableName + "\".* FROM _Links INNER JOIN \"" + q.tableName +
+			"\" ON _Links.OriginClass='" + subQ.tableName + "' AND _Links.OriginId='" + subQ.subId + "'.Id " +
+			" AND _Links.TargetClass='" + q.tableName + "' AND _Links.TargetId=\"" + q.tableName + "\".Id " +
 			" AND _Links.Attr='" + q.subAttr + "'"
 	} else {
-		sql = "SELECT * FROM " + q.tableName + filters + orderLimitOffset + ";"
+		sql = "SELECT * FROM \"" + q.tableName + "\"" + filters + orderLimitOffset + ";"
 	}
 
 	return sql, args

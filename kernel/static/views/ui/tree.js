@@ -5,6 +5,7 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
         this.rows = [];
         this.childrenAttr = options.children;
         this.columns = options.columns;
+        this.click = options.click;
 
         // transform tooltips into tooltip ui components
         this.actions = _.map(options.actions, function (action) {
@@ -18,6 +19,32 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
         };
     },
 
+    initListenersAfterRender: function () {
+        var _this = this;
+
+        this.listenTo(this.collection, 'add', function (element) {
+            // We need to wait until the element has been persisted
+            // otherwise the Id is not yet available
+            _this.listenToOnce(element, 'sync', function () {
+                var newNode = {
+                    model: element,
+                    children: [],
+                    childCollection: element.to(_this.childrenAttr)
+                };
+                _this.tree.push(newNode);
+
+                this.$tbody.append(_.flatten(_this.generateRow(newNode)));
+            });
+        });
+
+        this.listenTo(this.collection, "remove", function (element) {
+            var deletedRow = _.find(_this.rows, function (row) {
+                return row.model.get('Id') === element.get('Id');
+            });
+            deletedRow.remove();
+        });
+    },
+
     buildTree: function (callback) {
         var _this = this;
 
@@ -28,15 +55,18 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
             numRemaining -= 1;
 
             collection.forEach(function (model) {
+                var childCollection = model.to(_this.childrenAttr);
+
                 var modelObj = {
                     model: model,
-                    children: []
+                    children: [],
+                    childCollection: childCollection
                 };
 
                 array.push(modelObj);
 
                 numRemaining += 1
-                model.to(_this.childrenAttr).fetch({
+                childCollection.fetch({
                     success: appendCollection.bind(null, modelObj.children, callback)
                 });
             });
@@ -57,7 +87,9 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
         var _this = this;
         this.$tbody = this.$('tbody');
 
-        options.anmgr.waitForAction();
+        if (options.anmgr) {
+            options.anmgr.waitForAction();
+        }
         this.collection.fetch({
             success: function () {
                 // Build tree structure
@@ -78,15 +110,22 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
             var $tr = $('<tr><td colspan="' + colNum + '">The tree is empty</td></tr>');
             this.$tbody.append($tr);
         }
-        anmgr.notifyEnd();
+
+        if (anmgr) {
+            anmgr.notifyEnd();
+        }
     },
 
     generateRow: function (node) {
         var row = new Kernel_View_Ui_Treerow({
             model: node.model,
             children: node.children,
+            childCollection: node.childCollection,
             columns: this.columns,
-            actions: this.actions
+            actions: this.actions,
+            parent: null,
+            childrenAttr: this.childrenAttr,
+            click: this.click
         });
         this.rows.push(row);
 

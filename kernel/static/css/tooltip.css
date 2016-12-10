@@ -1,15 +1,23 @@
 .tooltip {
     display: none;
     position: absolute;
+    z-index: 20;
+}
+
+.tooltip-position-helper {
+    position: relative;
 }
 
 .tooltip-text {
     position: relative;
+    float: left;
     left: -50%;
     font-size: 90%;
     padding: 0.25em 0.5em;
     background: §primary-color;
-    color: §secondary-text-color;
+    color: §primary-text-color;
     white-space: nowrap;
-    border-radius: 0.1em;
+    border-radius: 2px;
+    box-shadow: 0 0 0.25em §border-color;
+    text-shadow: 0 0 1px #666666;
 }

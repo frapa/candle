@@ -1,6 +1,7 @@
 package kernel
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/frapa/ripple"
 	"net/http"
@@ -82,6 +83,40 @@ func GetLinkedResource(modelName string, q *query, linkName string) ([]AnyModel,
 		println(modelName, " ", linkName)
 		return []AnyModel{}, errors.New("Link does not exist")
 	}
+}
+
+// Takes map and creates/updates links
+func updateLinks(model AnyModel, linkMap map[string]interface{}) error {
+	for attrName, linksInt := range linkMap {
+		links := linksInt.([]interface{})
+
+		// check if link exists
+		modelName := model.GetClass()
+		if _, ok := linkTable[modelName][attrName]; ok {
+			linkInfo := GetLinkInfo(modelName, attrName)
+
+			for _, targetIdInt := range links {
+				targetId := targetIdInt.(string)
+				target := All(linkInfo.Target).Filter("Id", "=", targetId)
+
+				// check if target exists!
+				if target.Count() != 0 {
+					var baseTarget BaseModel
+					target.Get(&baseTarget)
+
+					model.Link(attrName, baseTarget)
+				} else {
+					return NewRestError("There is no '" + linkInfo.Target +
+						"' with Id=" + targetId)
+				}
+			}
+		} else {
+			return NewRestError("There is no relation '" + attrName +
+				"' for model '" + modelName + "'")
+		}
+	}
+
+	return nil
 }
 
 // --- Resource list --- //
@@ -234,14 +269,45 @@ func (c *GenericRestController) Post(ctx *ripple.Context) {
 		return
 	}
 
+	body := make([]byte, ctx.Request.ContentLength)
+	ctx.Request.Body.Read(body)
+
 	if resource, ok := MatchResource(ctx); ok {
+		// Save model
 		constructor := reflect.ValueOf(resource.constructor)
 		model := constructor.Call(nil)[0].Interface().(AnyModel)
+		json.Unmarshal(body, model)
 		Save(model)
+
+		// Read links
+		var jsonMapInt interface{}
+		json.Unmarshal(body, &jsonMapInt)
+		jsonMap := jsonMapInt.(map[string]interface{})
+		if linkMapInt, ok := jsonMap["links"]; ok {
+			linkMap := linkMapInt.(map[string]interface{})
+			err := updateLinks(model, linkMap)
+			if err != nil {
+				err.(*RestError).Send(ctx)
+				return
+			}
+		}
 
 		ctx.Response.Status = http.StatusCreated
 		ctx.Response.Body = model
 	}
+}
+
+func (c *GenericRestController) Delete(ctx *ripple.Context) {
+	if !c.Authenticate(ctx) {
+		return
+	}
+
+	modelName := ctx.Params["model"]
+	id := ctx.Params["id"]
+
+	var base BaseModel
+	All(modelName).Filter("Id", "=", id).Get(&base)
+	base.Delete()
 }
 
 func (c *GenericRestController) Put(ctx *ripple.Context) {
@@ -268,4 +334,8 @@ func NewRestError(msg string) *RestError {
 func (e *RestError) Send(ctx *ripple.Context) {
 	ctx.Response.Status = http.StatusBadRequest
 	ctx.Response.Body = e
+}
+
+func (e *RestError) Error() string {
+	return e.Message
 }

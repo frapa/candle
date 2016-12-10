@@ -165,11 +165,15 @@ func getAttrList(tableName string) string {
 }
 
 func createNewTableSql(tableName string, searchTableName string) string {
-	sql := "CREATE TABLE IF NOT EXISTS " + tableName + " ("
+	sql := "CREATE TABLE IF NOT EXISTS \"" + tableName + "\" ("
 
 	var cols []string
 	for attr, type_ := range schema.Tables[searchTableName][0].fields {
-		cols = append(cols, attr+" "+GetDbType(type_))
+		if attr == "Id" {
+			cols = append(cols, attr+" "+GetDbType(type_)+" PRIMARY KEY")
+		} else {
+			cols = append(cols, attr+" "+GetDbType(type_))
+		}
 	}
 	sql += strings.Join(cols, ", ") + ");"
 	return sql
@@ -178,12 +182,13 @@ func createNewTableSql(tableName string, searchTableName string) string {
 func createNewTables(tableName string) {
 	sql := createNewTableSql(tableName, tableName)
 	if _, err := GetDb().Exec(sql); err != nil {
+		println(sql)
 		panic(err)
 	}
 }
 
 func dropTable(tableName string) {
-	sql := "DROP TABLE " + tableName + ";"
+	sql := "DROP TABLE \"" + tableName + "\";"
 	if _, err := GetDb().Exec(sql); err != nil {
 		panic(err)
 	}
@@ -192,7 +197,7 @@ func dropTable(tableName string) {
 func addColumnToTable(tableName string, cols []string) {
 	for _, col := range cols {
 		type_ := schema.Tables[tableName][0].fields[col]
-		sql := "ALTER TABLE " + tableName + " ADD COLUMN " +
+		sql := "ALTER TABLE \"" + tableName + "\" ADD COLUMN " +
 			col + " " + GetDbType(type_) + ";"
 		if _, err := GetDb().Exec(sql); err != nil {
 			panic(err)
@@ -206,9 +211,9 @@ func updateTable(tableName string) {
 	sql := "BEGIN TRANSACTION; " +
 		createNewTableSql(tempTableName, tableName) +
 		" INSERT INTO " + tempTableName + " (" + attrList + ") " +
-		" SELECT " + attrList + " FROM " + tableName +
-		"; DROP TABLE " + tableName + "; ALTER TABLE " +
-		tempTableName + " RENAME TO " + tableName + "; COMMIT;"
+		" SELECT " + attrList + " FROM \"" + tableName +
+		"\"; DROP TABLE \"" + tableName + "\"; ALTER TABLE " +
+		tempTableName + " RENAME TO \"" + tableName + "\"; COMMIT;"
 
 	if _, err := GetDb().Exec(sql); err != nil {
 		panic(err)
@@ -286,7 +291,7 @@ func (t *table) getUpdateSql(rec *record) (string, []interface{}) {
 	}
 
 	joinedCols := strings.Join(colNames, ", ")
-	sql := "UPDATE " + t.name + " SET " + joinedCols + " WHERE Id=?;"
+	sql := "UPDATE \"" + t.name + "\" SET " + joinedCols + " WHERE Id=?;"
 	strValues = append(strValues, rec.fields["Id"])
 
 	return sql, strValues
@@ -311,7 +316,7 @@ func (t *table) getInsertSql(rec *record) (string, []interface{}) {
 
 	joinedCols := strings.Join(colNames, ", ")
 	joinedVals := strings.Join(questionMarks, ", ")
-	sql := "INSERT INTO " + t.name + " (" + joinedCols + ") VALUES (" + joinedVals + ");"
+	sql := "INSERT INTO \"" + t.name + "\" (" + joinedCols + ") VALUES (" + joinedVals + ");"
 
 	return sql, strValues
 }
@@ -319,7 +324,7 @@ func (t *table) getInsertSql(rec *record) (string, []interface{}) {
 func (t *table) getDeleteSql(rec *record) (string, []interface{}) {
 	var strValues []interface{}
 	strValues = append(strValues, rec.fields["Id"])
-	sql := "DELETE FROM " + t.name + " WHERE Id=?"
+	sql := "DELETE FROM \"" + t.name + "\" WHERE Id=?"
 	return sql, strValues
 }
 

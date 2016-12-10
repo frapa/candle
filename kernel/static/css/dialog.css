@@ -1,0 +1,126 @@
+.overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+}
+
+.dialog {
+    position: absolute;
+    background: §background-primary-color;
+    padding: 1.5em;
+    padding-bottom: 1em;
+    box-shadow: 0 0.05em 0.25em §border-color-dark;
+    z-index: 10;
+}
+
+.dialog-triangle-container {
+    position: absolute;
+}
+
+.dialog-triangle {
+    position: absolute;
+    width: 0;
+    height: 0;
+    background: transparent;
+    border: 1em solid transparent;
+    z-index: 11;
+}
+
+.dialog-triangle-border {
+    position: absolute;
+    left: -0.2em;
+    width: 0;
+    height: 0;
+    background: transparent;
+    border: 1.2em solid transparent;
+    z-index: 9;
+}
+
+/* Vertical */
+div.dialog-top {
+    border-top: 0.15em solid §primary-color;
+}
+
+.dialog-top .dialog-triangle-container {
+    top: -2em;
+}
+
+.dialog-top .dialog-triangle {
+    border-bottom: 1em solid §background-primary-color;
+}
+
+.dialog-top .dialog-triangle-border {
+    top: -0.4em;
+    border-bottom: 1.2em solid §primary-color;
+}
+
+/* --- */
+div.dialog-bottom {
+    border-bottom: 0.15em solid §primary-color;
+}
+
+.dialog-bottom .dialog-triangle-container {
+    bottom: 0;
+}
+
+.dialog-bottom .dialog-triangle {
+    border-top: 1em solid §background-primary-color;
+}
+
+.dialog-bottom .dialog-triangle-border {
+    top: 0;
+    border-top: 1.2em solid §primary-color;
+}
+
+/* Horizonatal */
+div.dialog-triangle-container-center {
+    left: 50%;
+}
+
+.dialog-triangle-container-center .dialog-triangle {
+    left: -1em;
+}
+
+.dialog-triangle-container-center .dialog-triangle-border {
+    left: -1.2em;
+}
+
+/* --- */
+div.dialog-triangle-container-east {
+    right: 1.7em;
+}
+
+.dialog-triangle-container-east .dialog-triangle {
+    left: -2em;
+}
+
+.dialog-triangle-container-east .dialog-triangle-border {
+    left: -2.2em;
+}
+
+.dialog header {
+    font-weight: 300;
+    margin-bottom: 1.25em;
+    font-size: 120%;
+}
+
+.datepicker.dialog > header {
+    display: none;
+}
+
+.dialog footer {
+    margin-top: 1.25em;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.datepicker.dialog footer {
+    display: none;
+}
+
+.dialog footer button:last-child {
+    margin-right: 0;
+}

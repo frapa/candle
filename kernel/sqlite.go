@@ -22,7 +22,7 @@ func GetSqliteDbTables() []string {
 }
 
 func GetSqliteDbTableAttribs(table string) map[string]string {
-	rows, err := GetDb().Query("PRAGMA table_info(" + table + ")")
+	rows, err := GetDb().Query("PRAGMA table_info(\"" + table + "\")")
 	if err != nil {
 		panic(err)
 	}

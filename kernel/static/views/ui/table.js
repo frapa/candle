@@ -1,13 +1,25 @@
 var Kernel_View_Ui_Table = AbstractView.extend({
     initialize: function (options) {
+        this.actions = options.actions;
+        this.inlineEditing = options.inlineEditing;
+        this.addingRow = options.addingRow;
+        
+        // transform tooltips into tooltip ui components
+        this.actions = _.map(options.actions, function (action) {
+            action.tooltip = new Kernel_View_Ui_Tooltip(action.tooltip);
+            return action;
+        });
+
         this.renderData = {
             columns: options.columns,
             headerTemplate: _.template('<th><%= header %></th>')
         };
     },
 
-    render: function () {
-        AbstractView.prototype.render.call(this, this.renderData);
+    render: function (options) {
+        AbstractView.prototype.render.call(this, {
+            templateObj: this.renderData
+        });
 
         var _this = this;
         this.$tbody = this.$('tbody');
@@ -17,6 +29,10 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         });
 
         return this
+    },
+
+    addAddingRow: function () {
+        
     },
 
     renderRows: function () {
@@ -33,7 +49,9 @@ var Kernel_View_Ui_Table = AbstractView.extend({
     getElFromModel: function (model) {
         var row = new Kernel_View_Ui_Row({
             model: model,
-            columns: this.renderData.columns
+            columns: this.renderData.columns,
+            inlineEditing: this.inlineEditing,
+            actions: this.actions
         });
         row.render();
         return row.$el;

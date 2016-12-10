@@ -5,13 +5,16 @@ import (
 )
 
 // Super simple CSS preprocessor. Only supports variables!
+// It also moves @import statements at the beginning
 
 var cssVariableDefRe *regexp.Regexp
 var cssVariableSubRe *regexp.Regexp
+var cssImportRe *regexp.Regexp
 
 func init() {
 	cssVariableDefRe = regexp.MustCompile("(?m)^\\s*(§[A-Za-z0-9_\\-]+)\\s*:\\s*([^;]+)\\s*;\\s*$")
 	cssVariableSubRe = regexp.MustCompile("§[A-Za-z0-9_\\-]+")
+	cssImportRe = regexp.MustCompile("(?m)^\\s*@import.*$")
 }
 
 func compileCss(css []byte) []byte {
@@ -34,6 +37,16 @@ func compileCss(css []byte) []byte {
 		return variablesTable[varNameString]
 	}
 	compiledCss = cssVariableSubRe.ReplaceAllFunc(compiledCss, replaceVar)
+
+	// More @import statements at the beginning
+	var imports []byte
+	saveImports := func(importStatement []byte) []byte {
+		imports = append(imports, importStatement...)
+		imports = append(imports, []byte("\n")...)
+		return []byte{}
+	}
+	compiledCss = cssImportRe.ReplaceAllFunc(compiledCss, saveImports)
+	compiledCss = append(imports, compiledCss...)
 
 	return compiledCss
 }

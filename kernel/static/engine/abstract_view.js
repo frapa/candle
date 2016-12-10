@@ -1,4 +1,8 @@
 var AbstractView = Backbone.View.extend({
+    initListenersAfterRender: function () {
+        // placeholder
+    },
+
     render: function (options) {
         if (options === undefined) {
             options = {};
@@ -16,6 +20,9 @@ var AbstractView = Backbone.View.extend({
             }
 
             this.setElement(this.template(templateObj));
+            if (this.className) {
+                this.$el.addClass(this.className);
+            }
 
             if (this.subviews === undefined) {
                 this.subviews = {};
@@ -35,6 +42,9 @@ var AbstractView = Backbone.View.extend({
         var $subview = this.$('subview[name="' + subview + '"]');
 
         if ($subview.length) {
+            view.renderedInto = subview;
+            view.parentView = this;
+
             var newAnmgr = new AsyncNotificationManager(
                 function () {
                     if (loadingIndicator === undefined)  {
@@ -43,6 +53,7 @@ var AbstractView = Backbone.View.extend({
                         loadingIndicator.$el.replaceWith(view.$el);
                         loadingIndicator.remove();
                     }
+                    view.initListenersAfterRender();
                 }, anmgr
             );
 
@@ -82,6 +93,7 @@ var AbstractView = Backbone.View.extend({
             var anmgr = new AsyncNotificationManager(function () {
                 loadingIndicator.$el.replaceWith(view.$el);
                 loadingIndicator.remove();
+                view.initListenersAfterRender();
             });
 
             loadingIndicator.render();
@@ -110,7 +122,12 @@ var AbstractView = Backbone.View.extend({
         var view = this.subviews[subview];
 
         if (view && view.$el !== undefined) {
+            $subview = $('<subview name="' + subview + '"></subview>');
+            view.$el.replaceWith($subview);        
+
             view.remove();
+
+            delete this.subviews[subview];
         }
     },
 
@@ -121,5 +138,14 @@ var AbstractView = Backbone.View.extend({
         _.each(this.subviews, function (view, subview) {
             view.remove();
         });
+    },
+
+    rerender: function () {
+        if (this.parentView) {
+            this.parentView.close(this.renderedInto);
+            this.parentView.open(this, this.renderedInto);
+        } else {
+            console.error("Cannot rerender: parent missing.");
+        }
     }
 });

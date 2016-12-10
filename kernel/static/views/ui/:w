@@ -5,87 +5,46 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
         this.parent = options.parent;
         this.children = options.children;
         this.childCollection = options.childCollection;
-        this.columns = options.columns;
         this.actions = options.actions;
-        this.childrenAttr = options.childrenAttr;
-        this.click = options.click;
 
         this.createSubRows(options);
         Kernel_View_Ui_Row.prototype.initialize.call(this, options);
     },
 
-    updateCount: function () {
-        var newCount = this.countChildren();
-
+    updateCount: function (newCount) {
         if (newCount) {
-            this.$('.count').first().html('(' + newCount + ')')
+            _this.$('.count').first().html('(' + newCount + ')')
         } else {
             // We need to remove the whole subtable
             this.$subRow.remove();
-            delete this.$subRow;
 
             // Remove count
-            this.$('.count').html('');
+            _this.$('.count').html('');
 
             // Finally we need to remove the Unfolding-indicator
-            this.$('.unfold-indicator')
+            _this.$('.unfold-indicator')
                 .removeClass('icon-down-open-mini')
                 .removeClass('icon-right-open-mini');
         }
 
-        if (this.parent != null) {
-            this.parent.updateCount();
-        }
+        if ()
     },
 
     initListenersAfterRender: function () {
         var _this = this;
 
-        this.listenTo(this.childCollection, 'add', function (element) {
-            // Before sync the Id does not exist.
-            _this.listenToOnce(element, 'sync', function () {
-                var newNode = {
-                    model: element,
-                    children: [],
-                    childCollection: element.to(_this.childrenAttr)
-                };
-                _this.children.push(newNode);
-
-                var newRow = new Kernel_View_Ui_Treerow({
-                    model: element,
-                    children: [],
-                    childCollection: element.to(_this.childrenAttr),
-                    columns: _this.columns,
-                    actions: _this.actions,
-                    parent: _this,
-                    childrenAttr: _this.childrenAttr,
-                    click: _this.click
-                });
-                _this.subRows.push(newRow);
-
-                if (_this.$subRow === undefined) {
-                    _this.generateSubRowHtml();
-                    _this.showUnfoldingIndicator();
-                    _this.$subRow.insertAfter(_this.$el);
-                }
-
-                newRow.render(_this.level+1);
-                _this.$subTable.append([newRow.$el, newRow.$subRow]);
-                _this.updateCount();
-            });
+        this.listenTo(this.childCollection, "add", function (element) {
+            //_this.buildTree(_this.renderRows.bind(_this, options.anmgr));
         });
 
         this.listenTo(this.childCollection, "remove", function (element) {
-            var index = -1;
             var deletedRow = _.find(_this.subRows, function (row) {
-                index += 1;
                 return row.model.get('Id') === element.get('Id');
             });
-
-            _this.subRows.splice(index, 1);
-            _this.updateCount();
-
             deletedRow.remove();
+
+            var newCount = this.childCollection.length;
+            _this.updateCount(newCount);
         });
     },
 
@@ -100,9 +59,7 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
                 childCollection: child.childCollection,
                 columns: options.columns,
                 actions: options.actions,
-                parent: _this,
-                childrenAttr: options.childrenAttr,
-                click: options.click
+                parent: _this
             });
             _this.subRows.push(row);
         });
@@ -136,8 +93,7 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
                 $button: $actionButton,
                 row: _this,
                 rowData: _this.columnData,
-                model: _this.model,
-                childCollection: _this.childCollection
+                model: _this.model
             }));
 
             action.tooltip.openOnHover($actionButton);
@@ -155,11 +111,10 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
         if (level === undefined) {
             level = 0;
         }
-        this.level = level;
 
         var _this = this;
 
-        this.$cells = _.map(this.columnData, function (cell, i) {
+        var $cells = _.map(this.columnData, function (cell, i) {
             var count = _this.countChildren();
             if (count && i == 0) {
                 _.extendOwn(cell, {count: '(' + count + ')'});
@@ -177,18 +132,17 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
         });
 
         var $row = $('<tr></tr>');
-        $row.append(this.$cells);
-        if (this.click) {
-            $row.click(this.click.bind(this, this.model));
-        }
+        $row.append($cells);
 
-        this.renderActions(_.last(this.$cells));
+        this.renderActions(_.last($cells));
 
         this.setElement($row);
 
         // Add subrows into another subtable
         if (this.subRows.length) {
-            this.generateSubRowHtml();
+            this.$subRow = $('<tr class="treeSubRow"><td colspan="' +
+                this.columnData.length + '"></td></tr>');
+            this.$subTable = $('<table class="table treeSubTable"></table>');
 
             _.invoke(this.subRows, 'render', level+1);
             var $rows = _.flatten(_.map(this.subRows, function (row) {
@@ -196,23 +150,13 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
             }), true);
 
             this.$subTable.append($rows);
+            this.$subRow.children().first().append(this.$subTable);
         } else {
             this.$subRow = $([]);
         }
 
         this.initListenersAfterRender();
         return this;
-    },
-
-    generateSubRowHtml: function () {
-        this.$subRow = $('<tr class="treeSubRow"><td colspan="' +
-            this.columnData.length + '"></td></tr>');
-        this.$subTable = $('<table class="table treeSubTable"></table>');
-        this.$subRow.children().first().append(this.$subTable);
-    },
-
-    showUnfoldingIndicator: function () {
-        this.$('.unfold-indicator').addClass('icon-down-open-mini');
     },
 
     addUnfoldingIndicator: function (cell, level) {

@@ -1,8 +1,14 @@
-<div class="dialog-container">
+<div class="overlay">
     <div class="dialog">
-        <h2><%= title %></h2>
+        <div class="dialog-triangle-container">
+            <div class="dialog-triangle"></div>
+            <div class="dialog-triangle-border"></div>
+        </div>
+        <header><%= title %></header>
         <div class="dialog-content">
             <subview name="content"></subview>
         </div>
+        <footer>
+        </footer>
     </div>
 </div>

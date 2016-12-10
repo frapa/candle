@@ -65,7 +65,7 @@ func Link(origin AnyModel, attr string, target AnyModel, linkInverse bool) error
 	}
 
 	link := GetLinkInfo(originClass, attr)
-	// check the target type of the target
+	// check the target type
 	if link.Target != targetClass {
 		panic("Trying to create link: \n\t" +
 			originClass + " --|" + attr + "|--> " + targetClass +

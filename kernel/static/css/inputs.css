@@ -1,0 +1,174 @@
+fieldset {
+    position: relative;
+    border: 0;
+    margin: 2.5em 0;
+    padding: 0;
+    left: 0;
+    right: 0;
+}
+
+.widget-helper fieldset {
+    margin: 0;
+    margin-bottom: 0.5em;
+}
+
+.input-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.5em;
+    border-bottom: 1px solid §secondary-text-color;
+}
+
+input {
+    font-family: 'Roboto';
+}
+
+/* Normal */
+input[type="text"] {
+    font-size: 100%;
+    border: 0;
+    padding: 0.25em 0.5em;
+    background: transparent;
+}
+
+.widget-helper input[type="text"] {
+    width: 100%;
+}
+
+input[type="text"] ~ label {
+    font-size: 100%;
+    color: §secondary-text-color;
+    padding: 0.25em 0.5em;
+    position: absolute;
+    left: 0;
+    top: 0;
+    transition: 0.2s ease all;
+    z-index: -10;
+}
+
+input[type="text"] ~ .input-bar::after {
+    transition: 0.2s ease all;
+    position: absolute;
+    left: 50%;
+    right: 50%;
+    bottom: 0;
+    content: " ";
+    border-bottom: 2px solid §primary-color;
+}
+
+/* Focused */
+input[type="text"]:focus ~ label,
+input[type="text"]:valid ~ label {
+    transition: 0.2s ease all;
+    font-size: 80%;
+    color: §primary-color-similar;
+    top: -1.5em;
+}
+
+input[type="text"]:focus ~ .input-bar::after {
+    transition: 0.2s ease all;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    content: " ";
+    border-bottom: 2px solid §primary-color;
+}
+
+/* Selectbox */
+.selectbox {
+    position: absolute;
+    top: 2.5em;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    z-index: 10;
+    visibility: hidden;
+}
+
+.selectbox-input {
+    background: transparent;
+}
+
+.selectbox-arrow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 1.5em;
+    display: flex;
+    align-items: center;
+}
+
+.selectbox-item {
+    padding: 0.5em;
+    display: none;
+}
+
+/* Focused */
+.selectbox-input:focus ~ .selectbox {
+    background: §background-primary-color;
+    box-shadow: 0 0.05em 0.25em §border-color;
+    visibility: visible;
+}
+
+.selectbox-input:focus ~ .selectbox .selectbox-item {
+    display: block;
+}
+
+.selectbox-input:focus ~ .selectbox .selectbox-item.hover {
+    color: §primary-color;
+    background: §border-color-light;
+    cursor: default;
+}
+
+/* DATEPICKER */
+.datepicker .dialog-content header {
+    margin-bottom: 1em;
+    display: flex;
+}
+
+.datepicker .dialog-content header .month {
+    flex-grow: 1;
+    text-align: center;
+}
+
+.datepicker table {
+    border-spacing: 0;
+}
+.datepicker th {
+    padding: 0.5em 1em;
+    padding-bottom: 1.5em;
+}
+
+.datepicker td {
+    padding: 0.5em 1em;
+    text-align: center;
+    cursor: pointer;
+}
+
+.datepicker td:hover,
+.datepicker td.other-month:hover {
+    background: §primary-color;
+    color: §primary-text-color;
+}
+
+.datepicker td.other-month {
+    color: §secondary-text-color;
+}
+
+.datepicker td.selected {
+    background: §primary-color-similar;
+    color: §primary-text-color;
+}
+
+.datepicker .prev,
+.datepicker .next {
+    cursor: pointer;
+}
+
+.datepicker .prev:hover,
+.datepicker .next:hover {
+    color: §primary-color;
+}

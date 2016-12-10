@@ -173,11 +173,11 @@ func GenerateIndex(title string) {
 	// add scripts
 	concatJs = []byte("var " + title + " = {};")
 	compactJs()
-	html += "<script src=\"concat.js\"></script>"
+	html += "<script src=\"/static/concat.js\"></script>"
 
 	// add css
 	compactCss()
-	html += "<link rel=\"stylesheet\" type=\"text/css\" href=\"concat.css\">"
+	html += "<link rel=\"stylesheet\" type=\"text/css\" href=\"/static/concat.css\">"
 
 	// finish off
 	html += "</head><body id=\"app\"><subview name=\"app\"></subview><subview name=\"dialog\"></subview></body></html>"

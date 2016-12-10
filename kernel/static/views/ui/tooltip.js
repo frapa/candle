@@ -11,32 +11,6 @@ var Kernel_View_Ui_Tooltip = AbstractView.extend({
         $(document.body).append(this.$el);
     },
 
-    computePosRelToBody: function ($target) {
-        var x = 0;
-        var y = 0;
-
-        var currentParent = $target;
-        do {
-            var pos = currentParent.position();
-            x += pos.left;
-            y += pos.top;
-
-            currentParent = currentParent.offsetParent()
-        } while (currentParent.prop('tagName') != 'BODY');
-
-        return [x, y];
-    },
-
-    computeHeight: function ($target) {
-        var height = $target.height();
-        return height;
-    },
-
-    computeWidth: function ($target) {
-        var width = $target.width();
-        return width;
-    },
-
     openOnHover: function ($target) {
         if (!this.rendered) {
             this.render();
@@ -44,12 +18,12 @@ var Kernel_View_Ui_Tooltip = AbstractView.extend({
 
         var _this = this;
         $target.on('mouseover', function () {
-            var pos = _this.computePosRelToBody($target);
-            var targetHeight = _this.computeHeight($target);
-            var targetWidth2 = _this.computeWidth($target) / 2;
+            var pos = utils.computePosRelToBody($target);
+            var targetHeight = utils.computeHeight($target);
+            var targetWidth2 = utils.computeWidth($target) / 2;
 
-            _this.$el.css('left', (pos[0] + targetWidth2) + 'px');
-            _this.$el.css('top', (pos[1] + targetHeight + 8) + 'px');
+            _this.$el.css('left', (pos[0] + targetWidth2) + 'em');
+            _this.$el.css('top', (pos[1] + targetHeight + 0.75) + 'em');
 
             _this.$el.show();
         });

@@ -12,5 +12,21 @@ var Relational_Model = Backbone.Model.extend({
             });
             return new tempCollection();
         }
-    }
+    },
+
+    link: function (attr, model) {
+        var links = this.get('links');
+
+        if (links === undefined) {
+            links = {};
+        }
+
+        if (links[attr] === undefined) {
+            links[attr] = [];
+        }
+
+        links[attr].push(model.get("Id"));
+
+        this.set('links', links);
+    },
 });

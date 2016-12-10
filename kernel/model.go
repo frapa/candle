@@ -2,6 +2,7 @@ package kernel
 
 import (
 	"github.com/rs/xid"
+	"time"
 )
 
 /* Useful interface for functions taking as argument
@@ -23,6 +24,7 @@ type BaseModel struct {
 	Id        string
 	Class     string `class` // special tag that should be used only here
 	Persisted bool   `nodb`  // is it already in the db?
+	CreatedOn time.Time
 }
 
 func init() {
@@ -35,6 +37,7 @@ func NewBaseModel() *BaseModel {
 
 	// initialize unique id
 	baseModel.Id = xid.New().String()
+	baseModel.CreatedOn = time.Now()
 
 	return baseModel
 }
@@ -60,5 +63,5 @@ func (bm BaseModel) To(attr string) *query {
 }
 
 func (bm BaseModel) Delete() error {
-	return Delete(bm)
+	return Delete(&bm)
 }

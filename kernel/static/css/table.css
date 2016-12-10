@@ -1,32 +1,33 @@
-§primary-color: #c53440;
-§secondary-text-color: white;
-§border-color: #dbdbdb;
-§border-color-light: #ededed;
-
-table {
+table.table {
     width: 100%;
     background: white;
     border: 1px solid §border-color;
     border-top: 0.15em solid §primary-color;
-    border-collapse: collapse;
+    border-spacing: 0;
     table-layout: fixed;
 }
 
-tr {
+table.table tr {
     position: relative;
 }
 
-th {
+
+table.table th {
     text-align: left;
     font-variant: small-caps;
 }
 
-th, td {
-    padding: 0.25em 0.75em;
+table.table th, 
+table.table td {
+    padding: 0.4em 0.75em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     border-bottom: 1px solid §border-color-light;
+}
+
+table.table tr:not(.treeSubRow):hover td {
+    background: §background-secondary-color;
 }
 
 .unfold-indicator {
@@ -47,13 +48,12 @@ tr.treeSubRow > td {
 }
 
 table.treeSubTable {
-    padding-left: 1.4em;
     border: 0;
 }
 
 div.table-actions {
     position: absolute;
-    display: none;
+    display: flex;
     justify-content: center;
     align-items: center;
     right: 1px;
@@ -62,14 +62,18 @@ div.table-actions {
     padding-right: 0.5em;
 }
 
-tr:hover > td > div.table-actions {
-    display: flex;
-}
-
 span.table-action {
+    display: none;
     cursor: pointer;
 }
 
-span.table-action:hover {
+tr:hover > td > div.table-actions > span.table-action,
+div.table-actions.selected > span.table-action {
+    display: inline;
+}
+
+span.table-action:hover,
+span.table-action.selected {
+    display: inline;
     color: §primary-color;
 }

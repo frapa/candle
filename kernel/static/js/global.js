@@ -5,5 +5,12 @@
 // list of globals.
 
 var global = {
-    mainView: null
+    mainView: null,
+    dateFormat: function (date) {
+        return date.getDate() + '.' + (date.getMonth()+1) + '.' + date.getFullYear();
+    },
+    dateParse: function (string) {
+        var pieces = string.split('.');
+        return new Date(pieces[2], pieces[1]-1, pieces[0]);
+    }
 };

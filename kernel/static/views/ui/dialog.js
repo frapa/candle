@@ -108,6 +108,10 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
                 .click(function () {
                     _this.close();
                 });
+            _this.$('.dialog')
+                .click(function (event) {
+                    event.stopPropagation();
+                });
             $(window)
                 .on('keypress', function (event) {
                     if (event.key == 'Escape')  {

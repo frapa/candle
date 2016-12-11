@@ -1,8 +1,4 @@
 var AbstractView = Backbone.View.extend({
-    initListenersAfterRender: function () {
-        // placeholder
-    },
-
     render: function (options) {
         if (options === undefined) {
             options = {};
@@ -53,7 +49,6 @@ var AbstractView = Backbone.View.extend({
                         loadingIndicator.$el.replaceWith(view.$el);
                         loadingIndicator.remove();
                     }
-                    view.initListenersAfterRender();
                 }, anmgr
             );
 

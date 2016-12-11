@@ -314,10 +314,6 @@ func (c *GenericRestController) Put(ctx *ripple.Context) {
 	println("put")
 }
 
-func (c *GenericRestController) Del(ctx *ripple.Context) {
-	println("delete")
-}
-
 // --- Helper function --- //
 type RestError struct {
 	Message string

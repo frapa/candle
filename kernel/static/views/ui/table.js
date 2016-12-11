@@ -31,13 +31,27 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         return this
     },
 
-    addAddingRow: function () {
-        
+    renderAddingRow: function () {
+        var newModel = new this.collection.model();
+        var addingRow = new Kernel_View_Ui_Row({
+            model: newModel,
+            empty: true,
+            columns: this.renderData.columns,
+            inlineEditing: true,
+            actions: this.actions
+        });
+
+        return addingRow.render().$el;
     },
 
     renderRows: function () {
         if (this.collection.length) {
             var $rows = this.collection.map(this.getElFromModel.bind(this));
+
+            if (this.addingRow) {
+                $rows.splice(0, 0, this.renderAddingRow());
+            }
+
             this.$tbody.append($rows);
         } else {
             var colNum = this.renderData.columns.length;

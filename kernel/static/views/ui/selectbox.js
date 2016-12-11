@@ -30,6 +30,8 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
                 }
             });
         }
+
+        return this;
     },
 
     initListeners: function () {

@@ -13,7 +13,18 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
             }
         });
 
+        this.initListenersAfterRender();
         return this;
+    },
+
+    initListenersAfterRender: function () {
+        var _this = this;
+        var triggerChange = function (event) {
+            _this.trigger('change', event.target.value, event);
+        };
+
+        this.$('input')
+            .on('change', triggerChange);
     },
     
     setValue: function (value) {

@@ -12,9 +12,20 @@ func generateClassTypeMap(modelName string) string {
 	for field, type_ := range table.fields {
 		jsObject += field + ":'" + type_ + "',"
 	}
+	jsObjectLinks := "{"
+	for linkName, info := range linkTable[modelName] {
+		resource, ok := restResources.Models[info.Target]
+		if ok {
+			packageName := resource.GetPackageName()
+			collectionName := packageName + "_Collection_" + modelName
+			jsObject += linkName + ":'link',"
+			jsObjectLinks += linkName + ":" + collectionName + ","
+		}
+	}
 	jsObject += "}"
+	jsObjectLinks += "}"
 
-	return jsObject
+	return jsObject + ",linkTypes:" + jsObjectLinks
 }
 
 func GenerateBackboneClasses() string {

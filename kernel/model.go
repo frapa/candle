@@ -13,6 +13,7 @@ type AnyModel interface {
 	GetClass() string
 	IsPersisted() bool
 	Link(string, AnyModel) error
+	Unlink(string, AnyModel) error
 	To(string) *query
 	Delete() error
 }
@@ -56,6 +57,10 @@ func (bm BaseModel) IsPersisted() bool {
 
 func (bm BaseModel) Link(attr string, target AnyModel) error {
 	return Link(bm, attr, target, true)
+}
+
+func (bm BaseModel) Unlink(attr string, target AnyModel) error {
+	return Unlink(bm, attr, target, true)
 }
 
 func (bm BaseModel) To(attr string) *query {

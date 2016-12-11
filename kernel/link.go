@@ -108,3 +108,47 @@ func Link(origin AnyModel, attr string, target AnyModel, linkInverse bool) error
 
 	return nil
 }
+
+func Unlink(origin AnyModel, attr string, target AnyModel, unlinkInverse bool) error {
+	if !origin.IsPersisted() || !target.IsPersisted() {
+		panic("Cannot Unink unpersisted element(s). Save them first.")
+	}
+
+	originId := origin.GetId()
+	originClass := origin.GetClass()
+	targetId := target.GetId()
+	targetClass := target.GetClass()
+
+	// check the existance of the link
+	if _, ok := linkTable[originClass][attr]; !ok {
+		panic(originClass + " has no link '" + attr + "'")
+	}
+
+	link := GetLinkInfo(originClass, attr)
+	// check the target type
+	if link.Target != targetClass {
+		panic("Trying to create link: \n\t" +
+			originClass + " --|" + attr + "|--> " + targetClass +
+			"\nExpected: \n\t" +
+			originClass + " --|" + attr + "|-> " + link.Target)
+	}
+
+	selectSql := "DELETE FROM _Links WHERE " +
+		"OriginClass=? AND TargetClass=? AND OriginId=? AND TargetId=? AND Attr=?"
+	_, err := GetDb().Exec(selectSql, originClass, targetClass, originId, targetId, attr)
+	if err != nil {
+		return err
+	}
+
+	if unlinkInverse {
+		inverse := link.Inverse
+		selectSql := "DELETE FROM _Links WHERE " +
+			"OriginClass=? AND TargetClass=? AND OriginId=? AND TargetId=? AND Attr=?"
+		_, err := GetDb().Exec(selectSql, targetClass, originClass, targetId, originId, inverse)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

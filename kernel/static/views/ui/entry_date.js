@@ -24,7 +24,11 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
 
     render: function(options) {
         Kernel_View_Ui_Entry.prototype.render.call(this, options);
+        this.initListenersAfterRender();
+        return this;
+    },
 
+    initListenersAfterRender: function () {
         // Here we bind an event that opens a dialog
         var _this = this;
         var $input = this.$('input');
@@ -128,6 +132,9 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
         var formattedDate = global.dateFormat(date);
         Kernel_View_Ui_Entry.prototype.setValue.call(this, formattedDate);
         this.selectedDate = date;
+        
+        // Notify change
+        this.trigger('change', date);
     },
 
     computeNumberOfWeeks: function (first, last) {

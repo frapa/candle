@@ -3,7 +3,7 @@ package kernel
 import (
 	"encoding/json"
 	"errors"
-	//"fmt"
+	"fmt"
 	"github.com/frapa/ripple"
 	"net/http"
 	"reflect"
@@ -97,13 +97,20 @@ func updateModel(body []byte, model AnyModel) error {
 	var jsonMapInt interface{}
 	json.Unmarshal(body, &jsonMapInt)
 	jsonMap := jsonMapInt.(map[string]interface{})
+
+	if unlinkMapInt, ok := jsonMap["unlink"]; ok {
+		unlinkMap := unlinkMapInt.(map[string]interface{})
+		err := removeLinks(model, unlinkMap)
+		if err != nil {
+			return err
+		}
+	}
+
 	if linkMapInt, ok := jsonMap["links"]; ok {
 		linkMap := linkMapInt.(map[string]interface{})
 		err := updateLinks(model, linkMap)
 		if err != nil {
 			return err
-		} else {
-			return nil
 		}
 	}
 
@@ -130,6 +137,49 @@ func updateLinks(model AnyModel, linkMap map[string]interface{}) error {
 					target.Get(&baseTarget)
 
 					model.Link(attrName, baseTarget)
+				} else {
+					return NewRestError("There is no '" + linkInfo.Target +
+						"' with Id=" + targetId)
+				}
+			}
+		} else {
+			return NewRestError("There is no relation '" + attrName +
+				"' for model '" + modelName + "'")
+		}
+	}
+
+	return nil
+}
+
+// Takes map and remove links
+func removeLinks(model AnyModel, unlinkMap map[string]interface{}) error {
+	for attrName, linksInt := range unlinkMap {
+		links := linksInt.([]interface{})
+
+		// check if link exists
+		modelName := model.GetClass()
+		if _, ok := linkTable[modelName][attrName]; ok {
+			linkInfo := GetLinkInfo(modelName, attrName)
+
+			for _, targetIdInt := range links {
+				targetId := targetIdInt.(string)
+
+				var targets *query
+				if targetId == "all" {
+					targets = All(modelName).To(attrName)
+				} else {
+					targets = All(linkInfo.Target).Filter("Id", "=", targetId)
+				}
+
+				// check if targets exist!
+				if targets.Count() != 0 {
+					println(targets.Count())
+					var baseTarget BaseModel
+
+					for targets.Next() {
+						targets.Get(&baseTarget)
+						model.Unlink(attrName, baseTarget)
+					}
 				} else {
 					return NewRestError("There is no '" + linkInfo.Target +
 						"' with Id=" + targetId)
@@ -340,6 +390,7 @@ func (c *GenericRestController) Put(ctx *ripple.Context) {
 
 	body := make([]byte, ctx.Request.ContentLength)
 	ctx.Request.Body.Read(body)
+	fmt.Println(string(body))
 
 	if resource, ok := MatchResource(ctx); ok {
 		// We fetch the right model

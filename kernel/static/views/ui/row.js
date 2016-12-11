@@ -130,7 +130,19 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 if (options.inlineEditing) {
                     return _this.createEditingWidget(cell, options.anmgr);
                 } else {
-                    return $(_this.cellTemplate(cell));
+                    if (cell.type === 'Time') {
+                        var date = cell.data;
+                        if (date === '0001-01-01T00:00:00Z') {
+                            date = '';
+                        }
+
+                        var newCell = _.clone(cell);
+                        newCell.data = date ? global.dateFormat(new Date(date)) : '';
+
+                        return $(_this.cellTemplate(newCell));
+                    } else {
+                        return $(_this.cellTemplate(cell));
+                    }
                 }
             });
 
@@ -199,8 +211,13 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         this.inlineEditingActivated = false;
     },
 
-    updateModel: function (attr, value) {
-        this.model.set(attr, value);
+    updateModel: function (link, attr, value) {
+        if (link) {
+            this.model.relink(attr, value);
+        } else {
+            this.model.set(attr, value);
+            console.log(attr, value);
+        }
     },
 
     createEditingWidget: function (cell, anmgr) {
@@ -210,7 +227,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
             // update model on change
             this.listenTo(cell.widget, 'change',
-                this.updateModel.bind(this, cell.attr));
+                this.updateModel.bind(this, false, cell.attr));
 
             var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
@@ -219,6 +236,11 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         } else if (cell.type === 'Time') {
             cell.widget = new Kernel_View_Ui_Date().render();
             cell.widget.setValue(cell.data);
+            
+            // update model on change
+            this.listenTo(cell.widget, 'change', function (date) {
+                this.updateModel(false, cell.attr, date.toISOString());
+            });
 
             var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
@@ -237,9 +259,12 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
 
             this.listenToOnce(cell.widget, 'render', function () {
-                console.log(21);
                 $cell.find('div').append(cell.widget.$el);
             });
+            
+            // update model on change
+            this.listenTo(cell.widget, 'change',
+                this.updateModel.bind(this, true, cell.link));
 
             return $cell
         } else {

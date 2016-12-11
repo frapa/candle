@@ -42,14 +42,25 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
         _.each(this.items, function (item) {
             // Click event for items in the list
             item.$item
+            .on('mousedown', function (event) {
+                // Here we want to stop the input from being blurred
+                // before we can get the click event on items.
+                event.preventDefault();
+            })
             .click(function () {
                 var newValue = item.$item.html();
                 if (newValue) {
                     $input[0].value = newValue;
                     _this.selected = item.model;
+                    _this.trigger('change', item.model);
+                    // Having blocked the event, we need to blur manually
+                    $input.blur();
                 }
             })
             .on('mouseover', function () {
+                // Stop scrolling if, while the selectbox list is
+                // being scrolled with the keyboard, the mouse is
+                // hovered on a item.
                 if (_this.scrolling) {
                     _this.scrolling = false;
                     return;
@@ -66,7 +77,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
         });
 
         $input
-        .blur(function () {
+        .blur(function (event) {
             // Check if the input is correct
             var val = $input[0].value;
 
@@ -89,9 +100,9 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             // Search in the list
             _this.search();
         })
-        .on('keypress', function (event) {
+        .on('keydown', function (event) {
             // Implement arrows and selection with enter
-            switch (event.code) {
+            switch (event.key) {
             case "ArrowDown":
                 _this.select(1);
                 break;
@@ -105,6 +116,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
                         // simulate click
                         item.$item.trigger('click');
                         _this.$('.selectbox').hide();
+                        _this.trigger('change', item.model);
                         return true;
                     }
                     return false;
@@ -113,6 +125,9 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             case "Escape":
             }
         })
+        // If item was selected with the keyboard and list was
+        // closed, we still want to show the list, even tough
+        // the input is already focused
         .click(function () {
             _this.$('.selectbox').show();
         });
@@ -132,6 +147,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
         });								// buzz-made*/
     },
 
+    // Select previous or next element through the keyboard
     select: function (mod) {
         var activeItems = _.filter(this.items, function (item) {
             return item.visible;

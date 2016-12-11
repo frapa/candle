@@ -26,6 +26,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
                     );
                     _this.initializeSearch();
                     _this.renderItems();
+                    _this.trigger('render');
                     options.anmgr.notifyEnd();
                 }
             });
@@ -186,8 +187,10 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             return;
         }
 
-        this.previousValue = this.selected.get(this.attr);
-        this.$('.selectbox-input')[0].value = this.selected.get(this.attr);
+        if (this.selected) { 
+            this.previousValue = this.selected.get(this.attr);
+            this.$('.selectbox-input')[0].value = this.selected.get(this.attr);
+        }
     },
 
     search: function () {
@@ -233,7 +236,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             var displayValue = model.get(_this.attr);
             var $item = $('<div class="selectbox-item">' + displayValue + '</div>');
 
-            if (model.get('Id') === _this.selected.get('Id')) {
+            if (_this.selected && model.get('Id') === _this.selected.get('Id')) {
                 $item.addClass('selected');
             }
 

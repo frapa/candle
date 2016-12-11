@@ -17,21 +17,22 @@ var Kernel_View_Ui_Table = AbstractView.extend({
     },
 
     render: function (options) {
-        AbstractView.prototype.render.call(this, {
+        AbstractView.prototype.render.call(this, _.extend(options, {
             templateObj: this.renderData
-        });
+        }));
 
         var _this = this;
         this.$tbody = this.$('tbody');
 
+        options.anmgr.waitForAction();
         this.collection.fetch({
-            success: this.renderRows.bind(_this)
+            success: this.renderRows.bind(_this, options.anmgr)
         });
 
         return this
     },
 
-    renderAddingRow: function () {
+    renderAddingRow: function (anmgr) {
         var newModel = new this.collection.model();
         var addingRow = new Kernel_View_Ui_Row({
             model: newModel,
@@ -41,33 +42,47 @@ var Kernel_View_Ui_Table = AbstractView.extend({
             actions: this.actions
         });
 
-        return addingRow.render().$el;
+        return addingRow.render({anmgr: anmgr}).$el;
     },
 
-    renderRows: function () {
-        if (this.collection.length) {
-            var $rows = this.collection.map(this.getElFromModel.bind(this));
+    renderRows: function (anmgr) {
+        var _this = this;
+
+        if (this.collection.length || this.addingRow) {
+            this.rows = [];
+
+            var asyncWaitForRows = new AsyncNotificationManager(function () {
+                var $rows = _.pluck(_this.rows, '$el');
+                _this.$tbody.append($rows);
+                anmgr.notifyEnd();
+            });
+            this.collection.map(this.getElFromModel.bind(this, asyncWaitForRows));
 
             if (this.addingRow) {
-                $rows.splice(0, 0, this.renderAddingRow());
+                this.renderAddingRow(asyncWaitForRows);
             }
 
-            this.$tbody.append($rows);
+            asyncWaitForRows.notifyEnd();
         } else {
             var colNum = this.renderData.columns.length;
             var $tr = $('<tr><td colspan="' + colNum + '">The table is empty</td></tr>');
             this.$tbody.append($tr);
+            anmgr.notifyEnd();
         }
     },
 
-    getElFromModel: function (model) {
+    getElFromModel: function (anmgr, model) {
         var row = new Kernel_View_Ui_Row({
             model: model,
             columns: this.renderData.columns,
             inlineEditing: this.inlineEditing,
             actions: this.actions
         });
-        row.render();
-        return row.$el;
+
+        row.render({
+            anmgr: anmgr
+        });
+
+        this.rows.push(row);
     }
 });

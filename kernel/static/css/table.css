@@ -26,6 +26,10 @@ table.table td {
     border-bottom: 1px solid §border-color-light;
 }
 
+table.table td.widget {
+    overflow: visible;
+}
+
 table.table tr:not(.treeSubRow):hover td {
     background: §background-secondary-color;
 }

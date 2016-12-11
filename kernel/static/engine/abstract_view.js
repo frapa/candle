@@ -31,6 +31,7 @@ var AbstractView = Backbone.View.extend({
         }
         
         this.rendered = true;
+        this.trigger('render');
         return this;
     },
 
@@ -88,7 +89,6 @@ var AbstractView = Backbone.View.extend({
             var anmgr = new AsyncNotificationManager(function () {
                 loadingIndicator.$el.replaceWith(view.$el);
                 loadingIndicator.remove();
-                view.initListenersAfterRender();
             });
 
             loadingIndicator.render();

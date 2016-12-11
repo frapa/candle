@@ -17,7 +17,7 @@ var Relational_Model = Backbone.Model.extend({
         }
     },
 
-    link: function (attr, model) {
+    link: function (attr, model, callback) {
         var links = this.get('links');
 
         if (links === undefined) {
@@ -28,8 +28,17 @@ var Relational_Model = Backbone.Model.extend({
             links[attr] = [];
         }
 
-        links[attr].push(model.get("Id"));
+        var _this = this;
+        var setLink = function () {
+            links[attr].push(model.get("Id"));
+            _this.set('links', links);
+        }
 
-        this.set('links', links);
+        if (model.isNew()) {
+            this.listenToOnce(model, 'sync', setLink);
+            model.save();
+        } else {
+            setLink();
+        }
     },
 });

@@ -424,7 +424,7 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 		type_ := field.Type.Name()
 		tag := field.Tag
 
-		if tag == "nodb" {
+		if tag.Get("nodb") == "true" {
 			if fieldName == "Persisted" {
 				fieldValue.SetBool(true)
 			}

@@ -61,7 +61,7 @@ func createRecordFromObject(model AnyModel, topModelName_ ...string) []*record {
 		fieldName := field.Name
 		tag := field.Tag
 
-		if tag != "nodb" {
+		if tag.Get("nodb") != "true" {
 			if tag == "class" {
 				rec.addCol(fieldName, reflect.ValueOf(topModelName))
 			} else {

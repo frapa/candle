@@ -17,9 +17,9 @@ func generateClassTypeMap(modelName string) string {
 		resource, ok := restResources.Models[info.Target]
 		if ok {
 			packageName := resource.GetPackageName()
-			collectionName := packageName + "_Collection_" + modelName
+			collectionName := packageName + "_Collection_" + info.Target
 			jsObject += linkName + ":'link',"
-			jsObjectLinks += linkName + ":" + collectionName + ","
+			jsObjectLinks += linkName + ": '" + collectionName + "',"
 		}
 	}
 	jsObject += "}"

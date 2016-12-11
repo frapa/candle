@@ -22,8 +22,8 @@ type AnyModel interface {
  */
 type BaseModel struct {
 	Id        string
-	Class     string `class` // special tag that should be used only here
-	Persisted bool   `nodb`  // is it already in the db?
+	Class     string `class`                // special tag that should be used only here
+	Persisted bool   `nodb:"true" json:"-"` // is it already in the db?
 	CreatedOn time.Time
 }
 

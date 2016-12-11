@@ -3,6 +3,7 @@ package kernel
 import (
 	"encoding/json"
 	"errors"
+	//"fmt"
 	"github.com/frapa/ripple"
 	"net/http"
 	"reflect"
@@ -83,6 +84,30 @@ func GetLinkedResource(modelName string, q *query, linkName string) ([]AnyModel,
 		println(modelName, " ", linkName)
 		return []AnyModel{}, errors.New("Link does not exist")
 	}
+}
+
+// --- Helper functions --- //
+
+func updateModel(body []byte, model AnyModel) error {
+	// Store and save simple attributes
+	json.Unmarshal(body, model)
+	Save(model)
+
+	// Read and save links
+	var jsonMapInt interface{}
+	json.Unmarshal(body, &jsonMapInt)
+	jsonMap := jsonMapInt.(map[string]interface{})
+	if linkMapInt, ok := jsonMap["links"]; ok {
+		linkMap := linkMapInt.(map[string]interface{})
+		err := updateLinks(model, linkMap)
+		if err != nil {
+			return err
+		} else {
+			return nil
+		}
+	}
+
+	return nil
 }
 
 // Takes map and creates/updates links
@@ -213,7 +238,6 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 		return
 	}
 
-	modelName := ctx.Params["model"]
 	id := ctx.Params["id"]
 	link := ctx.Params["link"]
 
@@ -236,7 +260,7 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 
 			// Check if requested id exists
 			if matchingModel.Count() == 0 {
-				NewRestError("There is no '" + modelName +
+				NewRestError("There is no '" + resource.modelName +
 					"' with id '" + id + "'.").Send(ctx)
 			} else {
 				matchingModel.Get(model)
@@ -248,14 +272,14 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 
 			// Check if requested id exists
 			if matchingModel.Count() == 0 {
-				NewRestError("There is no '" + modelName +
+				NewRestError("There is no '" + resource.modelName +
 					"' with id '" + id + "'.").Send(ctx)
 			} else {
-				collection, err := GetLinkedResource(modelName, matchingModel, link)
+				collection, err := GetLinkedResource(resource.modelName, matchingModel, link)
 				if err != nil {
 					println(err.Error())
 					NewRestError("There is no relation '" + link +
-						"' for model '" + modelName + "'").Send(ctx)
+						"' for model '" + resource.modelName + "'").Send(ctx)
 				} else {
 					ctx.Response.Body = collection
 				}
@@ -273,27 +297,17 @@ func (c *GenericRestController) Post(ctx *ripple.Context) {
 	ctx.Request.Body.Read(body)
 
 	if resource, ok := MatchResource(ctx); ok {
-		// Save model
+		// Create and save model
 		constructor := reflect.ValueOf(resource.constructor)
 		model := constructor.Call(nil)[0].Interface().(AnyModel)
-		json.Unmarshal(body, model)
-		Save(model)
 
-		// Read links
-		var jsonMapInt interface{}
-		json.Unmarshal(body, &jsonMapInt)
-		jsonMap := jsonMapInt.(map[string]interface{})
-		if linkMapInt, ok := jsonMap["links"]; ok {
-			linkMap := linkMapInt.(map[string]interface{})
-			err := updateLinks(model, linkMap)
-			if err != nil {
-				err.(*RestError).Send(ctx)
-				return
-			}
+		err := updateModel(body, model)
+		if err != nil {
+			err.(*RestError).Send(ctx)
+		} else {
+			ctx.Response.Status = http.StatusCreated
+			ctx.Response.Body = model
 		}
-
-		ctx.Response.Status = http.StatusCreated
-		ctx.Response.Body = model
 	}
 }
 
@@ -302,16 +316,46 @@ func (c *GenericRestController) Delete(ctx *ripple.Context) {
 		return
 	}
 
-	modelName := ctx.Params["model"]
 	id := ctx.Params["id"]
+	if id == "" {
+		return
+	}
 
-	var base BaseModel
-	All(modelName).Filter("Id", "=", id).Get(&base)
-	base.Delete()
+	if resource, ok := MatchResource(ctx); ok {
+		var base BaseModel
+		All(resource.modelName).Filter("Id", "=", id).Get(&base)
+		base.Delete()
+	}
 }
 
 func (c *GenericRestController) Put(ctx *ripple.Context) {
-	println("put")
+	if !c.Authenticate(ctx) {
+		return
+	}
+
+	id := ctx.Params["id"]
+	if id == "" {
+		return
+	}
+
+	body := make([]byte, ctx.Request.ContentLength)
+	ctx.Request.Body.Read(body)
+
+	if resource, ok := MatchResource(ctx); ok {
+		// We fetch the right model
+		model := NewInstanceOf(resource.modelName)
+		matchingModel := All(resource.modelName).Filter("Id", "=", id)
+
+		// Check if requested id exists
+		if matchingModel.Count() == 0 {
+			NewRestError("There is no '" + resource.modelName +
+				"' with id '" + id + "'.").Send(ctx)
+		} else {
+			matchingModel.Get(model)
+			updateModel(body, model)
+			ctx.Response.Body = model
+		}
+	}
 }
 
 // --- Helper function --- //

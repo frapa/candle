@@ -5,16 +5,17 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         this.actions = options.actions ? options.actions : [];
         this.inlineEditing = options.inlineEditing;
         this.inlineEditingActivated = false;
-        
+        this.linksFetched = false;
+
         var _this = this;
+        var linkCount = 0;
         this.columnData = _.map(options.columns, function (col) {
             var cellData = {
                 attr: col.attr,
                 link: col.link,
-                linkDisplayAttr: col.linkDisplayAttr
             };
                 
-            if (col.attr !== undefined) {
+            if (col.attr !== undefined && col.link === undefined) {
                 var data = _this.model.get(col.attr);
                 cellData.data = data === undefined ? 'Insert here...' : data;
                 cellData.type = _this.model.types[col.attr];
@@ -22,8 +23,32 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 cellData.data = col.compute(_this.model);
             } else if (col.method !== undefined) {
                 cellData.data = _this.model[col.method]();
+            } else if (col.link !== undefined) {
+                if (_this.model.isNew()) {
+                    cellData.data = '';
+                } else {
+                    linkCount++;
+                    _this.model.to(col.link)
+                    .fetch({
+                        success: function (collection) {
+                            if (collection.length === 0) {
+                                cellData.data = '';
+                            } else {
+                                cellData.data = collection.at(0).get(col.attr);
+                                cellData.collection = collection;
+                            }
+
+                            linkCount--;
+                            if (linkCount == 0) {
+                                _this.trigger('links_fetched')
+                                _this.linksFetched = true;
+                            }
+                        }
+                    });
+                }
+                cellData.type = 'link';
             } else {
-                cellData.data = "";
+                cellData.data = '';
             };
 
             return cellData;
@@ -52,15 +77,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             actions.push({
                 icon: 'icon-floppy',
                 callback: function () {
-                    console.info(_this.model);
-                    _this.model.save();
-
-                    var $current = _this.$el;
-                    _this.render(false);
-                    $current.replaceWith(_this.$el);
+                    _this.saveEditedRow();
                     tooltip.remove();
-                    
-                    _this.inlineEditingActivated = false;
                 },
                 tooltip: tooltip
             });
@@ -72,6 +90,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             $actionButton.addClass(action.icon);
             
             var wrapCallback = function (event) {
+                // Otherwise the row would be clicked
 				event.stopPropagation();
 				action.callback.apply({
 					$button: $actionButton,
@@ -99,29 +118,46 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         $cell.append($div);
     },
 
-
-    render: function (inlineEditing) {
+    render: function (options) {
         var _this = this;
-
-        this.$cells = _.map(this.columnData, function (cell) {
-            if (inlineEditing) {
-                return _this.createEditingWidget(cell);
-            } else {
-                return $(_this.cellTemplate(cell));
-            }
-        });
-
-        var $row = $('<tr></tr>');
-        $row.append(this.$cells);
-
-        this.setElement($row);
-
-        this.renderActions(_.last(this.$cells), inlineEditing);
-
-        // Initialize listeners if it wasn't already done.
-        if (this.inlineEditing && !inlineEditing) {
-            this.inlineEditingListeners();
+        
+        if (options === undefined) {
+            options = {};
         }
+
+        var renderIntern = function (wait) {
+            _this.$cells = _.map(_this.columnData, function (cell) {
+                if (options.inlineEditing) {
+                    return _this.createEditingWidget(cell, options.anmgr);
+                } else {
+                    return $(_this.cellTemplate(cell));
+                }
+            });
+
+            var $row = $('<tr></tr>');
+            $row.append(_this.$cells);
+
+            _this.setElement($row);
+
+            _this.renderActions(_.last(_this.$cells), options.inlineEditing);
+            // Initialize listeners if it wasn't already done.
+            if (_this.inlineEditing && !options.inlineEditing) {
+                _this.inlineEditingListeners();
+            }
+
+            _this.trigger('render');
+            if (wait) {
+                options.anmgr.notifyEnd();
+            }
+        }
+
+        if (!this.linksFetched) {
+            options.anmgr.waitForAction();
+            this.listenToOnce(this, 'links_fetched', renderIntern.bind(null, true));
+        } else {
+            renderIntern(false);
+        }
+
         return this;
     },
 
@@ -129,20 +165,45 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         var _this = this;
 
         if (!this.inlineEditingActivated) {
-            this.$el.click(function () {
+            this.$el
+            .click(function () {
                 var $current = _this.$el;
-                _this.render(true);
-                $current.replaceWith(_this.$el);
-                _this.inlineEditingActivated = true;
+                var anmgr = new AsyncNotificationManager(function () {
+                    $current.replaceWith(_this.$el);
+                    _this.inlineEditingActivated = true;
+                });
+
+                _this.render({
+                    inlineEditing: true,
+                    anmgr: anmgr
+                });
+                anmgr.notifyEnd();
+            })
+        } else {
+            this.$('input')
+            .on('keypress', function (event) {
+                if (event.key == 'Enter') {
+                    _this.saveEditedRow();
+                }
             });
         }
+    },
+
+    saveEditedRow: function () {
+        this.model.save();
+
+        var $current = this.$el;
+        this.render(false);
+        $current.replaceWith(this.$el);
+        
+        this.inlineEditingActivated = false;
     },
 
     updateModel: function (attr, value) {
         this.model.set(attr, value);
     },
 
-    createEditingWidget: function (cell) {
+    createEditingWidget: function (cell, anmgr) {
         if (cell.type === 'string') {
             cell.widget = new Kernel_View_Ui_Entry().render();
             cell.widget.setValue(cell.data);
@@ -151,7 +212,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             this.listenTo(cell.widget, 'change',
                 this.updateModel.bind(this, cell.attr));
 
-            var $cell = $('<td><div class="widget-helper"></div></td>');
+            var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
 
             return $cell
@@ -159,19 +220,26 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             cell.widget = new Kernel_View_Ui_Date().render();
             cell.widget.setValue(cell.data);
 
-            var $cell = $('<td><div class="widget-helper"></div></td>');
+            var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
 
             return $cell
         } else if (cell.type === 'link') {
-            var linkedCollection = this.model.linkTypes[cell.attr];
+            var linkedCollection = window[this.model.linkTypes[cell.link]];
             cell.widget = new Kernel_View_Ui_Selectbox({
                 collection: new linkedCollection(),
-                attr: cell.linkDisplayAttr,
-            }).render();
+                attr: cell.attr,
+                selected: cell.collection === undefined ? undefined : cell.collection.at(0)
+            }).render({
+                anmgr: anmgr
+            });
 
-            var $cell = $('<td><div class="widget-helper"></div></td>');
-            $cell.find('div').append(cell.widget.$el);
+            var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
+
+            this.listenToOnce(cell.widget, 'render', function () {
+                console.log(21);
+                $cell.find('div').append(cell.widget.$el);
+            });
 
             return $cell
         } else {

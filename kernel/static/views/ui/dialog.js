@@ -103,25 +103,35 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
             $dialog.css('top', (pos[1] + verModifier) + 'em');
 
             _this.setTriangle(vloc, hloc);
-
-            _this.$el
-                .click(function () {
-                    _this.close();
-                });
-            _this.$('.dialog')
-                .click(function (event) {
-                    event.stopPropagation();
-                });
-            $(window)
-                .on('keypress', function (event) {
-                    if (event.key == 'Escape')  {
-                        _this.close();
-                        $(window).off('keypress', this);
-                    }
-                });
+            _this.bindExitListeners();
 
             $dialog.css('visibility', 'visible');
         }, 10);
+    },
+
+    bindExitListeners: function () {
+        var _this = this;
+
+        // Close on click out
+        this.$el
+            .click(function () {
+                _this.close();
+            });
+
+        // Avoid closing on click in
+        this.$('.dialog')
+            .click(function (event) {
+                event.stopPropagation();
+            });
+
+        // Close on Escape
+        $(window)
+            .on('keypress', function (event) {
+                if (event.key == 'Escape')  {
+                    _this.close();
+                    $(window).off('keypress', this);
+                }
+            });
     },
 
     close: function () {

@@ -357,7 +357,7 @@ func createTableFromModel(model AnyModel) []*table {
 		type_ := field.Type.Name()
 		tag := field.Tag
 
-		if tag != "nodb" {
+		if tag.Get("nodb") != "true" {
 			tab.addCol(fieldName, type_)
 		}
 	}

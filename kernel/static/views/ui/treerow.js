@@ -133,18 +133,19 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
 
             $actionButton.addClass(action.icon);
 
-				var wrapCallback = function (event) {
-					event.stopPropagation();
-					action.callback.apply({
-						$button: $actionButton,
-						row: _this,
-						rowData: _this.columnData,
-						model: _this.model,
-						childCollection: _this.childCollection
-					});
-				};
-				
-				$actionButton.click( wrapCallback );
+            var wrapCallback = function (event) {
+                // Otherwise the row would be clicked
+                event.stopPropagation();
+                action.callback.apply({
+                    $button: $actionButton,
+                    row: _this,
+                    rowData: _this.columnData,
+                    model: _this.model,
+                    childCollection: _this.childCollection
+                });
+            };
+            
+            $actionButton.click(wrapCallback);
 
             action.tooltip.openOnHover($actionButton);
 

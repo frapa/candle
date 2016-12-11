@@ -37,6 +37,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
 
     initListeners: function () {
         var _this = this;
+        var $input = this.$('.selectbox-input');
 
         _.each(this.items, function (item) {
             // Click event for items in the list
@@ -44,7 +45,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             .click(function () {
                 var newValue = item.$item.html();
                 if (newValue) {
-                    _this.$('.selectbox-input')[0].value = newValue;
+                    $input[0].value = newValue;
                     _this.selected = item.model;
                 }
             })
@@ -64,13 +65,12 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             });
         });
 
-        this.$('.selectbox-input')
+        $input
         .blur(function () {
             // Check if the input is correct
-            var val = _this.$('.selectbox-input')[0].value;
+            var val = $input[0].value;
 
             var index = _this.validValues.indexOf(val.toLowerCase());
-            var $input = _this.$('.selectbox-input');
             if (index == -1) {
                 $input[0].value = _this.previousValue;
                 $input.css('color', 'unset');
@@ -116,6 +116,20 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
         .click(function () {
             _this.$('.selectbox').show();
         });
+
+        /*this.$('.selectbox-arrow')		// buzz-made
+        .click(function (event) {
+			event.stopPropagation();
+			console.log($input[0]);
+			console.log(document.activeElement);
+			if ($input.is(':focus')) {
+				$input.blur();
+				console.log('blur');
+			} else {
+				$input.focus();
+				console.log('focus');
+			}
+        });								// buzz-made*/
     },
 
     select: function (mod) {

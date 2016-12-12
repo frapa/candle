@@ -2,7 +2,8 @@ var Kernel_View_Ui_Table = AbstractView.extend({
     initialize: function (options) {
         this.actions = options.actions;
         this.inlineEditing = options.inlineEditing;
-        this.addingRow = options.addingRow;
+        this.hasAddingRow = options.addingRow;
+        this.addingRowBeforeSave = options.addingRowBeforeSave;
         
         // transform tooltips into tooltip ui components
         this.actions = _.map(options.actions, function (action) {
@@ -34,31 +35,44 @@ var Kernel_View_Ui_Table = AbstractView.extend({
 
     renderAddingRow: function (anmgr) {
         var newModel = new this.collection.model();
-        var addingRow = new Kernel_View_Ui_Row({
+        this.addingRow = new Kernel_View_Ui_Row({
             model: newModel,
             empty: true,
             columns: this.renderData.columns,
             inlineEditing: true,
-            actions: this.actions
+            actions: this.actions,
+            saveAction: this.addingRowBeforeSave
         });
 
-        return addingRow.render({anmgr: anmgr}).$el;
+        anmgr.waitForAction();
+        var waitForAddingRow = new AsyncNotificationManager(function () {
+            anmgr.notifyEnd();
+        });
+
+        this.addingRow.render({anmgr: waitForAddingRow});
+
+        waitForAddingRow.notifyEnd();
     },
 
     renderRows: function (anmgr) {
         var _this = this;
 
-        if (this.collection.length || this.addingRow) {
+        if (this.collection.length || this.hasAddingRow) {
             this.rows = [];
 
             var asyncWaitForRows = new AsyncNotificationManager(function () {
                 var $rows = _.pluck(_this.rows, '$el');
                 _this.$tbody.append($rows);
+
+                if (_this.hasAddingRow) {
+                    _this.$tbody.prepend(_this.addingRow.$el);
+                }
+
                 anmgr.notifyEnd();
             });
             this.collection.map(this.getElFromModel.bind(this, asyncWaitForRows));
 
-            if (this.addingRow) {
+            if (this.hasAddingRow) {
                 this.renderAddingRow(asyncWaitForRows);
             }
 

@@ -6,6 +6,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         this.inlineEditing = options.inlineEditing;
         this.inlineEditingActivated = false;
         this.linksFetched = false;
+        this.saveAction = options.saveAction;
 
         var _this = this;
         var linkCount = 0;
@@ -163,7 +164,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             }
         }
 
-        if (!this.linksFetched) {
+        if (!this.linksFetched && !this.model.isNew()) {
             options.anmgr.waitForAction();
             this.listenToOnce(this, 'links_fetched', renderIntern.bind(null, true));
         } else {
@@ -202,6 +203,10 @@ var Kernel_View_Ui_Row = AbstractView.extend({
     },
 
     saveEditedRow: function () {
+        if (this.saveAction) {
+            this.saveAction(this.model);
+        }
+
         this.model.save();
 
         var $current = this.$el;

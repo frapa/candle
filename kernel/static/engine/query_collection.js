@@ -25,6 +25,7 @@ var QueryCollection = Backbone.Collection.extend({
             var innerSuccess = options.success;
             var outerSuccess = function (collection, response, options_) {
                 _this.fetched = true;
+                _this.trigger('fetched');
                 innerSuccess(collection, response, options_);
             };
             options.success = outerSuccess;

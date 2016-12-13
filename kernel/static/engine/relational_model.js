@@ -1,19 +1,79 @@
 var Relational_Model = Backbone.Model.extend({
-    to: function (key) {
-        if (this.links[key] === undefined) {
-            console.error('There is no relation named "' + key + '"');
+    toCache: {},
+    linkedModelsCache: {},
+
+    createNewCollection: function (attr) {
+        var linkInfo = this.links[attr];
+        var url = linkInfo.urlTemplate(this.toJSON());
+        
+        var tempCollection = QueryCollection.extend({
+            url: url,
+            model: linkInfo.model
+        });
+
+        return new tempCollection();
+    },
+
+    cacheLinkedModel: function (attr, model) {
+        if (this.toCache.hasOwnProperty(attr)) {
+            // If the collection was already fetched, add element to it.
+            // There is no need to cache it because the collection cannot
+            // be fetched twice.
+            this.toCache[attr].add(model);
+        } else {
+            // If the collection wasn't fetched, then on fetch we won't get
+            // this model since the link isn't saved yet. (On save we reset
+            // the cache, so that this link won't be there anymore)
+            
+            if (!this.cacheLinkedModel.hasOwnProperty(attr)) {
+                this.cacheLinkedModel[attr] = [];
+            }
+
+            this.cacheLinkedModel[attr].push(model);
+        }
+    },
+
+    // This isn't complete, but i'm burned out now
+    clearCache: function (attr) {
+        if (!this.cacheLinkedModel.hasOwnProperty(attr)) {
+            return;
+        }
+
+        this.linkedModelsCache[attr] = [];
+    },
+
+    to: function (attr) {
+        if (this.links[attr] === undefined) {
+            console.error('There is no relation named "' + attr + '"');
         } else if (this.isNew()) {
             // Model wasn't persisted we need to make up something
             console.error('Cannot go a complex step away from unpersisted model');
         } else {
-            var linkInfo = this.links[key];
-            var url = linkInfo.urlTemplate(this.toJSON());
+            // check if the model is in cache
+            var isInCache = this.toCache.hasOwnProperty(attr);
 
-            var tempCollection = Backbone.Collection.extend({
-                url: url,
-                model: linkInfo.model
-            });
-            return new tempCollection();
+            if (isInCache) {
+                var collection = this.toCache[attr];
+                return collection;
+            } else {
+                var tempCollectionInst = this.createNewCollection(attr);
+
+                var _this = this;
+                this.listenToOnce(tempCollectionInst, 'fetched', function () {
+                    _this.toCache[attr] = tempCollectionInst;
+
+                    // This happens if fetch is called after link. We need to
+                    // add the linked and not yet saved models to the collection.
+                    // Unpersisted links are cached until save is called.
+                    if (_this.linkedModelsCache.hasOwnProperty[attr]) {
+                        _.each(_this.linkedModelsCache[attr], function (model) {
+                            tempCollectionInst.add(model);
+                        });
+                    }
+                });
+                
+                return tempCollectionInst;
+            }
         }
     },
 
@@ -42,6 +102,8 @@ var Relational_Model = Backbone.Model.extend({
         } else {
             setLink();
         }
+
+        this.cacheLinkedModel(attr, model, true);
     },
 
     /*unlink: function (attr, model) {
@@ -70,6 +132,7 @@ var Relational_Model = Backbone.Model.extend({
         var unlink = this.get('unlink');
         unlink = unlink == undefined ? {} : unlink;
         unlink[attr] = ['all'];
+        this.clearCache(attr);
         this.set('unlink', unlink);
 
         var links = this.get('links');
@@ -85,5 +148,13 @@ var Relational_Model = Backbone.Model.extend({
     relink: function (attr, model, callback) {
         this.unlinkAll(attr);
         this.link(attr, model, callback);
+    },
+
+    save: function (attributes, options) {
+        Backbone.Model.prototype.save.call(this, attributes, options);
+        
+        // Model is saved. The cached links are not relevant anymore,
+        // because a fetch would get them from the server. Delete the cache.
+        this.linkedModelsCache = {};
     }
 });

@@ -40,9 +40,10 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
                 } else if (event.key == 'ArrowDown') {
                     _this.selectedDate.setDate(date + 7);
                 } else if (event.key == 'ArrowLeft') {
-                    _this.selectedDate.setDate(date - 1);
+                    // these two conflict with moving in the input
+                    //_this.selectedDate.setDate(date - 1);
                 } else if (event.key == 'ArrowRight') {
-                    _this.selectedDate.setDate(date + 1);
+                    //_this.selectedDate.setDate(date + 1);
                 } else if (event.key == 'Tab') {
                     _this.dialog.close();
                     return;
@@ -50,7 +51,6 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
                     return;
                 }
 
-                console.log(1);
                 _this.setValue(_this.selectedDate);
                 _this.rebuild();
             })

@@ -5,12 +5,18 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         this.actions = options.actions ? options.actions : [];
         this.inlineEditing = options.inlineEditing;
         this.inlineEditingActivated = false;
-        this.linksFetched = false;
         this.saveAction = options.saveAction;
+        this.columns = options.columns;
+
+        this.buildCellData();
+    },
+
+    buildCellData: function () {
+        this.linksFetched = false;
 
         var _this = this;
         var linkCount = 0;
-        this.columnData = _.map(options.columns, function (col) {
+        this.columnData = _.map(this.columns, function (col) {
             var cellData = {
                 attr: col.attr,
                 link: col.link,
@@ -209,11 +215,21 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
         this.model.save();
 
-        var $current = this.$el;
-        this.render(false);
-        $current.replaceWith(this.$el);
-        
         this.inlineEditingActivated = false;
+
+        var $current = this.$el;
+        var _this = this;
+        var replaceWhenReady = new AsyncNotificationManager(function () {
+            $current.replaceWith(_this.$el);
+        });
+
+        this.buildCellData(true);
+        this.render({
+            inlineEditing: false,
+            anmgr: replaceWhenReady
+        });
+        
+        replaceWhenReady.notifyEnd();
     },
 
     updateModel: function (link, cell, value) {

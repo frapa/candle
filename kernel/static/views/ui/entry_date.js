@@ -24,7 +24,6 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
 
     render: function(options) {
         Kernel_View_Ui_Entry.prototype.render.call(this, options);
-        this.initListenersAfterRender();
         return this;
     },
 
@@ -33,7 +32,7 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
         var _this = this;
         var $input = this.$('input');
         $input
-            .on('keypress', function (event) {
+            .on('keydown', function (event) {
                 var date = _this.selectedDate.getDate();
                 
                 if (event.key == 'ArrowUp') {
@@ -51,6 +50,7 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
                     return;
                 }
 
+                console.log(1);
                 _this.setValue(_this.selectedDate);
                 _this.rebuild();
             })
@@ -121,12 +121,11 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
 
     setValue: function (date) {
         if (typeof date === 'string') {
-            // Set today if date is invalid
-            if (date === '0001-01-01T00:00:00Z') {
-                date = new Date();
-            } else {
-                date = new Date(date);
-            }
+            date = new Date(date);
+        }
+        
+        if (isNaN(date.getTime())) {
+            date = new Date();
         }
 
         var formattedDate = global.dateFormat(date);

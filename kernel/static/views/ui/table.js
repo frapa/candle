@@ -45,7 +45,11 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         });
 
         anmgr.waitForAction();
+        var _this = this;
         var waitForAddingRow = new AsyncNotificationManager(function () {
+            var $firstCell = _this.addingRow.$('td').first();
+            $firstCell.append('&nbsp;<div class="adding-row-indicator">Click here to add row...</div>');
+
             anmgr.notifyEnd();
         });
 

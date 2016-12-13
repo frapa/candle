@@ -18,7 +18,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 
             if (col.attr !== undefined && col.link === undefined) {
                 var data = _this.model.get(col.attr);
-                cellData.data = data === undefined ? 'Insert here...' : data;
+                cellData.data = data === undefined ? '' : data;
                 cellData.type = _this.model.types[col.attr];
             } else if (col.compute !== undefined) {
                 cellData.data = col.compute(_this.model);
@@ -162,7 +162,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             if (wait) {
                 options.anmgr.notifyEnd();
             }
-        }
+        };
 
         if (!this.linksFetched && !this.model.isNew()) {
             options.anmgr.waitForAction();
@@ -216,23 +216,26 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         this.inlineEditingActivated = false;
     },
 
-    updateModel: function (link, attr, value) {
+    updateModel: function (link, cell, value) {
         if (link) {
-            this.model.relink(attr, value);
+            this.model.relink(cell.attr, value);
         } else {
-            this.model.set(attr, value);
-            console.log(attr, value);
+            if (cell.type === 'int64') {
+                this.model.set(cell.attr, parseInt(value));
+            } else {
+                this.model.set(cell.attr, value);
+            }
         }
     },
 
     createEditingWidget: function (cell, anmgr) {
-        if (cell.type === 'string') {
+        if (cell.type === 'string' || cell.type === 'int64') {
             cell.widget = new Kernel_View_Ui_Entry().render();
             cell.widget.setValue(cell.data);
 
             // update model on change
             this.listenTo(cell.widget, 'change',
-                this.updateModel.bind(this, false, cell.attr));
+                this.updateModel.bind(this, false, cell));
 
             var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
@@ -244,7 +247,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             
             // update model on change
             this.listenTo(cell.widget, 'change', function (date) {
-                this.updateModel(false, cell.attr, date.toISOString());
+                this.updateModel(false, cell, date.toISOString());
             });
 
             var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
@@ -269,7 +272,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             
             // update model on change
             this.listenTo(cell.widget, 'change',
-                this.updateModel.bind(this, true, cell.link));
+                this.updateModel.bind(this, true, cell));
 
             return $cell
         } else {

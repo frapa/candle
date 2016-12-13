@@ -7,6 +7,9 @@
 var global = {
     mainView: null,
     dateFormat: function (date) {
+        if (isNaN(date.getTime())) {
+            return '';
+        }
         return date.getDate() + '.' + (date.getMonth()+1) + '.' + date.getFullYear();
     },
     dateParse: function (string) {

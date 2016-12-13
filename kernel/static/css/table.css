@@ -81,3 +81,13 @@ span.table-action.selected {
     display: inline;
     color: §primary-color;
 }
+
+div.adding-row-indicator {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding: 0.4em 0.75em;
+    color: §secondary-text-color;
+}

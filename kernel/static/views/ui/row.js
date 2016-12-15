@@ -41,6 +41,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                             if (collection.length === 0) {
                                 cellData.data = '';
                             } else {
+                                console.log(collection.at(0).get(col.attr));
                                 cellData.data = collection.at(0).get(col.attr);
                                 cellData.collection = collection;
                             }

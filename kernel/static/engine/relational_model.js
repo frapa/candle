@@ -1,6 +1,8 @@
 var Relational_Model = Backbone.Model.extend({
-    toCache: {},
-    linkedModelsCache: {},
+    initialize: function () {
+        this.toCache = {};
+        this.linkedModelsCache = {};
+    },
 
     createNewCollection: function (attr) {
         var linkInfo = this.links[attr];
@@ -16,9 +18,9 @@ var Relational_Model = Backbone.Model.extend({
 
     cacheLinkedModel: function (attr, model) {
         if (this.toCache.hasOwnProperty(attr)) {
-            // If the collection was already fetched, add element to it.
-            // There is no need to cache it because the collection cannot
-            // be fetched twice.
+            // If the collection was already fetched, add element to
+            // it. There is no need to cache it because the collection
+            // cannot be fetched twice.
             this.toCache[attr].add(model);
         } else {
             // If the collection wasn't fetched, then on fetch we won't get
@@ -33,13 +35,19 @@ var Relational_Model = Backbone.Model.extend({
         }
     },
 
-    // This isn't complete, but i'm burned out now
     clearCache: function (attr) {
         if (!this.cacheLinkedModel.hasOwnProperty(attr)) {
             return;
         }
 
         this.linkedModelsCache[attr] = [];
+
+        if (this.toCache.hasOwnProperty(attr)) {
+            console.log(collection.models);
+            var collection = this.toCache[attr];
+            collection.remove(collection.models);
+            collection.fetched = true;
+        }
     },
 
     to: function (attr) {

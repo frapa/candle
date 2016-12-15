@@ -67,7 +67,8 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
 
                 numRemaining += 1
                 childCollection.fetch({
-                    success: appendCollection.bind(null, modelObj.children, callback)
+                    success: appendCollection.bind(null,
+                        modelObj.children, callback)
                 });
             });
 

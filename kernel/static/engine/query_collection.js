@@ -1,6 +1,4 @@
 var QueryCollection = Backbone.Collection.extend({
-    fetched: false,
-    
     initialize: function (options) {
         if (options && options.url) {
             this.url = options.url;
@@ -9,6 +7,8 @@ var QueryCollection = Backbone.Collection.extend({
         if (options && options.query) {
             this.url += '?' + options.query;
         }
+
+        this.fetched = false;
     },
 
     /* This is a performance enhancement. If the collection

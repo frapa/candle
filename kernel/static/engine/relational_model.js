@@ -36,14 +36,9 @@ var Relational_Model = Backbone.Model.extend({
     },
 
     clearCache: function (attr) {
-        if (!this.cacheLinkedModel.hasOwnProperty(attr)) {
-            return;
-        }
-
         this.linkedModelsCache[attr] = [];
 
         if (this.toCache.hasOwnProperty(attr)) {
-            console.log(collection.models);
             var collection = this.toCache[attr];
             collection.remove(collection.models);
             collection.fetched = true;

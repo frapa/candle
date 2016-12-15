@@ -42,6 +42,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                                 cellData.data = '';
                             } else {
                                 console.log(collection.at(0).get(col.attr));
+                                console.log(_this.model.linkedModelsCache);
                                 cellData.data = collection.at(0).get(col.attr);
                                 cellData.collection = collection;
                             }
@@ -235,7 +236,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
     updateModel: function (link, cell, value) {
         if (link) {
-            this.model.relink(cell.attr, value);
+            this.model.relink(cell.link, value);
         } else {
             if (cell.type === 'int64') {
                 this.model.set(cell.attr, parseInt(value));

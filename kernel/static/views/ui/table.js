@@ -12,8 +12,10 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         });
 
         this.renderData = {
+            width: (100.0 / options.columns.length),
             columns: options.columns,
-            headerTemplate: _.template('<th><%= header %></th>')
+            headerTemplate: _.template('<th style="width: ' +
+                '<%= width %>%;"><%= header %></th>')
         };
     },
 
@@ -33,6 +35,39 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         return this
     },
 
+    initKeys: function () {
+        var _this = this;
+
+        keymage('ctrl-s', function () {
+            var editedRows = _.filter(_this.rows, function (row) {
+                return row.inlineEditingActivated;
+            });
+
+            _.each(editedRows, function (row) {
+                row.saveEditedRow();
+            });
+
+            if (_this.hasAddingRow) {
+                // For convenience already prepare new row
+                _this.addingRow.once('saved', function () {
+                    _this.addingRow.$('td').first().click();
+                    _this.addingRow.once('activated', function () {
+                        _this.addingRow.$('input').first().focus();
+                    });
+                });
+
+                // If we do not blur current input, the changes 
+                // will be left out. Because the model wasn't updated
+                // yet.
+                $(':focus').blur();
+
+                _this.addingRow.saveEditedRow();
+            }
+
+            return false;
+        });
+    },
+
     renderAddingRow: function (anmgr) {
         var newModel = new this.collection.model();
         this.addingRow = new Kernel_View_Ui_Row({
@@ -48,14 +83,26 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         var _this = this;
         var waitForAddingRow = new AsyncNotificationManager(function () {
             var $firstCell = _this.addingRow.$('td').first();
-            $firstCell.append('&nbsp;<div class="adding-row-indicator">Click here to add row...</div>');
+            $firstCell.append('&nbsp;<div class="adding-row-indicator">' +
+                'Click here to add row...</div>');
 
             anmgr.notifyEnd();
         });
 
         this.addingRow.render({anmgr: waitForAddingRow});
 
+        this.listenToOnce(this.addingRow, 'saved', function () {
+            var tmpAnmgr = new AsyncNotificationManager(
+                _this.prependAddingRow.bind(_this));
+            _this.renderAddingRow(tmpAnmgr);
+            tmpAnmgr.notifyEnd();
+        });
+
         waitForAddingRow.notifyEnd();
+    },
+
+    prependAddingRow: function () {
+        this.$tbody.prepend(this.addingRow.$el);
     },
 
     renderRows: function (anmgr) {
@@ -69,12 +116,14 @@ var Kernel_View_Ui_Table = AbstractView.extend({
                 _this.$tbody.append($rows);
 
                 if (_this.hasAddingRow) {
-                    _this.$tbody.prepend(_this.addingRow.$el);
+                    _this.prependAddingRow();
                 }
 
+                _this.initKeys();
                 anmgr.notifyEnd();
             });
-            this.collection.map(this.getElFromModel.bind(this, asyncWaitForRows));
+            this.collection.map(this.getElFromModel.bind(this,
+                asyncWaitForRows));
 
             if (this.hasAddingRow) {
                 this.renderAddingRow(asyncWaitForRows);
@@ -83,7 +132,8 @@ var Kernel_View_Ui_Table = AbstractView.extend({
             asyncWaitForRows.notifyEnd();
         } else {
             var colNum = this.renderData.columns.length;
-            var $tr = $('<tr><td colspan="' + colNum + '">The table is empty</td></tr>');
+            var $tr = $('<tr><td colspan="' + colNum +
+                '">The table is empty</td></tr>');
             this.$tbody.append($tr);
             anmgr.notifyEnd();
         }
@@ -102,5 +152,11 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         });
 
         this.rows.push(row);
+    },
+
+    remove: function () {
+        AbstractView.prototype.remove.call(this);
+
+
     }
 });

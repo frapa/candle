@@ -2,7 +2,6 @@ table.table {
     width: 100%;
     background: white;
     border: 1px solid §border-color;
-    border-top: 0.15em solid §primary-color;
     border-spacing: 0;
     table-layout: fixed;
 }
@@ -13,8 +12,11 @@ table.table tr {
 
 
 table.table th {
+    /*background: §primary-color;
+    color: white;*/
     text-align: left;
     font-variant: small-caps;
+    border-bottom: 0.15em solid §primary-color;
 }
 
 table.table th, 
@@ -23,6 +25,9 @@ table.table td {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+table.table td {
     border-bottom: 1px solid §border-color-light;
 }
 

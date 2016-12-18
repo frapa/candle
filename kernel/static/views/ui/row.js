@@ -41,8 +41,6 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                             if (collection.length === 0) {
                                 cellData.data = '';
                             } else {
-                                console.log(collection.at(0).get(col.attr));
-                                console.log(_this.model.linkedModelsCache);
                                 cellData.data = collection.at(0).get(col.attr);
                                 cellData.collection = collection;
                             }
@@ -136,8 +134,10 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
         var renderIntern = function (wait) {
             _this.$cells = _.map(_this.columnData, function (cell) {
+                var $cell = null;
+
                 if (options.inlineEditing) {
-                    return _this.createEditingWidget(cell, options.anmgr);
+                    $cell = _this.createEditingWidget(cell, options.anmgr);
                 } else {
                     if (cell.type === 'Time') {
                         var date = cell.data;
@@ -146,13 +146,18 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                         }
 
                         var newCell = _.clone(cell);
-                        newCell.data = date ? global.dateFormat(new Date(date)) : '';
+                        newCell.data = date ?
+                            global.dateFormat(new Date(date)) : '';
 
-                        return $(_this.cellTemplate(newCell));
+                        $cell = $(_this.cellTemplate(newCell));
                     } else {
-                        return $(_this.cellTemplate(cell));
+                        $cell = $(_this.cellTemplate(cell));
                     }
                 }
+
+                var colNum = _this.columnData.length;
+                $cell.css('width', (100.0 / colNum) + '%');
+                return $cell;
             });
 
             var $row = $('<tr></tr>');
@@ -174,7 +179,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
         if (!this.linksFetched && !this.model.isNew()) {
             options.anmgr.waitForAction();
-            this.listenToOnce(this, 'links_fetched', renderIntern.bind(null, true));
+            this.listenToOnce(this, 'links_fetched',
+                renderIntern.bind(null, true));
         } else {
             renderIntern(false);
         }
@@ -188,10 +194,12 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         if (!this.inlineEditingActivated) {
             this.$el
             .click(function () {
+                _this.inlineEditingActivated = true;
                 var $current = _this.$el;
+
                 var anmgr = new AsyncNotificationManager(function () {
                     $current.replaceWith(_this.$el);
-                    _this.inlineEditingActivated = true;
+                    _this.trigger('activated');
                 });
 
                 _this.render({
@@ -200,13 +208,6 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 });
                 anmgr.notifyEnd();
             })
-        } else {
-            this.$('input')
-            .on('keypress', function (event) {
-                if (event.key == 'Enter') {
-                    _this.saveEditedRow();
-                }
-            });
         }
     },
 
@@ -223,6 +224,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         var _this = this;
         var replaceWhenReady = new AsyncNotificationManager(function () {
             $current.replaceWith(_this.$el);
+            _this.trigger('saved');
         });
 
         this.buildCellData(true);
@@ -255,7 +257,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             this.listenTo(cell.widget, 'change',
                 this.updateModel.bind(this, false, cell));
 
-            var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
+            var $cell = $('<td class="widget">' +
+                '<div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
 
             return $cell
@@ -268,7 +271,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 this.updateModel(false, cell, date.toISOString());
             });
 
-            var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
+            var $cell = $('<td class="widget">' +
+                '<div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
 
             return $cell
@@ -277,12 +281,14 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             cell.widget = new Kernel_View_Ui_Selectbox({
                 collection: new linkedCollection(),
                 attr: cell.attr,
-                selected: cell.collection === undefined ? undefined : cell.collection.at(0)
+                selected: cell.collection === undefined ?
+                    undefined : cell.collection.at(0)
             }).render({
                 anmgr: anmgr
             });
 
-            var $cell = $('<td class="widget"><div class="widget-helper"></div></td>');
+            var $cell = $('<td class="widget">' +
+                '<div class="widget-helper"></div></td>');
 
             this.listenToOnce(cell.widget, 'render', function () {
                 $cell.find('div').append(cell.widget.$el);

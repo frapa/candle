@@ -14,8 +14,10 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
         });
 
         this.renderData = {
+            width: (100.0 / this.columns.length),
             columns: this.columns,
-            headerTemplate: _.template('<th><%= header %></th>')
+            headerTemplate: _.template('<th style="width: ' +
+                '<%= width %>%;"><%= header %></th>')
         };
     },
 
@@ -104,11 +106,13 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
     renderRows: function (anmgr) {
         if (this.tree.length) {
             //_.invoke(this.rows, 'remove');
-            var $rows = _.flatten(this.tree.map(this.generateRow.bind(this)), true);
+            var rowsTree = this.tree.map(this.generateRow.bind(this));
+            var $rows = _.flatten(rowsTree, true);
             this.$tbody.append($rows);
         } else {
             var colNum = this.renderData.columns.length;
-            var $tr = $('<tr><td colspan="' + colNum + '">The tree is empty</td></tr>');
+            var $tr = $('<tr><td colspan="' + colNum +
+                '">The tree is empty</td></tr>');
             this.$tbody.append($tr);
         }
 

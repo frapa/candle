@@ -1,7 +1,9 @@
 <table class="table">
     <thead>
         <tr>
-            <% _.each(columns, col => print(headerTemplate(col)) ); %>
+            <% _.each(columns, function (col) {
+                print(headerTemplate(_.extend(col, {width: width})));
+            }); %>
         </tr>
     </thead>
     <tbody>

@@ -89,6 +89,8 @@ func GetLinkedResource(modelName string, q *query, linkName string) ([]AnyModel,
 // --- Helper functions --- //
 
 func updateModel(body []byte, model AnyModel) error {
+	var finalErr error
+
 	// Store and save simple attributes
 	json.Unmarshal(body, model)
 	Save(model)
@@ -102,7 +104,7 @@ func updateModel(body []byte, model AnyModel) error {
 		unlinkMap := unlinkMapInt.(map[string]interface{})
 		err := removeLinks(model, unlinkMap)
 		if err != nil {
-			return err
+			finalErr = err
 		}
 	}
 
@@ -110,11 +112,11 @@ func updateModel(body []byte, model AnyModel) error {
 		linkMap := linkMapInt.(map[string]interface{})
 		err := updateLinks(model, linkMap)
 		if err != nil {
-			return err
+			finalErr = err
 		}
 	}
 
-	return nil
+	return finalErr
 }
 
 // Takes map and creates/updates links
@@ -173,7 +175,6 @@ func removeLinks(model AnyModel, unlinkMap map[string]interface{}) error {
 
 				// check if targets exist!
 				if targets.Count() != 0 {
-					println(targets.Count())
 					var baseTarget BaseModel
 
 					for targets.Next() {

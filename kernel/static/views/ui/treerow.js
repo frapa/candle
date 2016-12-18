@@ -175,6 +175,8 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
             }
 
             var $cell = $(_this.cellTemplate(cell));
+            var colNum = _this.columnData.length;
+            $cell.css('width', (100.0 / colNum) + '%');
 
             if (i == 0) {
                 _this.addUnfoldingIndicator($cell, level);

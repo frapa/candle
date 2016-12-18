@@ -63,7 +63,7 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
                 });
                 _this.subRows.push(newRow);
 
-                if (_this.$subRow === undefined) {
+                if (!_this.$subRow.length) {
                     _this.generateSubRowHtml();
                     _this.showUnfoldingIndicator();
                     _this.$subRow.insertAfter(_this.$el);
@@ -136,7 +136,7 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
             var wrapCallback = function (event) {
                 // Otherwise the row would be clicked
                 event.stopPropagation();
-                action.callback.apply({
+                action.callback({
                     $button: $actionButton,
                     row: _this,
                     rowData: _this.columnData,

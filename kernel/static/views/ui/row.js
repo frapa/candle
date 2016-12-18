@@ -99,7 +99,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             var wrapCallback = function (event) {
                 // Otherwise the row would be clicked
 				event.stopPropagation();
-				action.callback.apply({
+				action.callback({
 					$button: $actionButton,
 					row: _this,
 					rowData: _this.columnData,
@@ -108,7 +108,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 				});
 			};
 			
-            $actionButton.click( wrapCallback);
+            $actionButton.click(wrapCallback);
 
             action.tooltip.openOnHover($actionButton);
 

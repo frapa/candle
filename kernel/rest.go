@@ -257,6 +257,8 @@ func (c *GenericRestController) ApplyQueryParameters(q *query, ctx *ripple.Conte
 
 	nq := q.Clone()
 
+	count := 0
+	var fil filter
 	for key, value := range ctx.GetQuery() {
 		if key != "user" && key != "psw" {
 			if len(value) == 1 && len(value[0]) == 0 {
@@ -264,22 +266,38 @@ func (c *GenericRestController) ApplyQueryParameters(q *query, ctx *ripple.Conte
 				if strings.Contains(key, "<") {
 					tockens := strings.Split(key, "<")
 					if table.hasField(tockens[0]) {
-						nq = nq.Filter(tockens[0], "<", tockens[1])
+						if count == 0 {
+							fil = F(tockens[0], "<", tockens[1])
+						} else {
+							fil = And(fil, F(tockens[0], "<", tockens[1]))
+						}
+						count++
 					}
 				} else if strings.Contains(key, ">") {
 					tockens := strings.Split(key, ">")
 					if table.hasField(tockens[0]) {
-						nq = nq.Filter(tockens[0], ">", tockens[1])
+						if count == 0 {
+							fil = F(tockens[0], ">", tockens[1])
+						} else {
+							fil = And(fil, F(tockens[0], ">", tockens[1]))
+						}
+						count++
 					}
 				}
 			} else {
 				// Then it is a = filter
 				if table.hasField(key) {
-					nq = nq.Filter(key, "=", value[0])
+					if count == 0 {
+						fil = F(key, "=", value[0])
+					} else {
+						fil = And(fil, F(key, "=", value[0]))
+					}
+					count++
 				}
 			}
 		}
 	}
+	nq = nq.Filter(fil)
 
 	return nq
 }

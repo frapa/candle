@@ -50,9 +50,15 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
     addButtons: function () {
         var $footer = this.$('footer');
         var _this = this;
-        _.each(this.buttons, function (callback, text) {
+        _.each(this.buttons, function (callback, text)
+        {
             var $button = $('<button class="flat">' + text + '</button>');
-            $button.click(function () {
+            $button.click(function ()
+            {
+                if (typeof callback == 'string') {
+                    callback = _this[callback];
+                }
+
                 if (callback.call(_this, _this.subviews)) {
                     global.mainView.closeDialog();
                 }

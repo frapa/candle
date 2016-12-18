@@ -313,7 +313,7 @@ func (q *query) Current() int {
 }
 
 func (q *query) GetAll() []AnyModel {
-	var collection []AnyModel
+	collection := []AnyModel{}
 
 	for q.Next() {
 		model := NewInstanceOf(q.tableName)
@@ -449,7 +449,9 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 				}
 			}
 
-			fieldValue.Set(value)
+			if value.IsValid() {
+				fieldValue.Set(value)
+			}
 		}
 	}
 }

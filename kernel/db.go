@@ -30,3 +30,17 @@ func GetDb() *sql.DB {
 func GetDriver() int {
 	return SQLITE
 }
+
+// Some extra goodies which speed up execution of
+// import where you have lots of queries.
+// Use: simply wrap the code making many writes
+// between begin and commit.
+// Expect a speedup of more than 100x !!!
+
+func BeginTransaction() {
+	GetDb().Exec("BEGIN TRANSACTION;")
+}
+
+func CommitTransaction() {
+	GetDb().Exec("COMMIT TRANSACTION;")
+}

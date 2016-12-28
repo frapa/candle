@@ -3,7 +3,7 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         this.actions = options.actions;
         this.inlineEditing = options.inlineEditing;
         this.hasAddingRow = options.addingRow;
-        this.addingRowBeforeSave = options.addingRowBeforeSave;
+        this.beforeSave = options.beforeSave;
         
         // transform tooltips into tooltip ui components
         this.actions = _.map(options.actions, function (action) {
@@ -72,11 +72,10 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         var newModel = new this.collection.model();
         this.addingRow = new Kernel_View_Ui_Row({
             model: newModel,
-            empty: true,
             columns: this.renderData.columns,
             inlineEditing: true,
             actions: this.actions,
-            saveAction: this.addingRowBeforeSave
+            saveAction: this.beforeSave
         });
 
         anmgr.waitForAction();
@@ -144,7 +143,8 @@ var Kernel_View_Ui_Table = AbstractView.extend({
             model: model,
             columns: this.renderData.columns,
             inlineEditing: this.inlineEditing,
-            actions: this.actions
+            actions: this.actions,
+            saveAction: this.beforeSave
         });
 
         row.render({

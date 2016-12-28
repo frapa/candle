@@ -218,8 +218,15 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
         }
 
         if (this.selected) { 
-            this.previousValue = this.selected.get(this.attr);
-            this.$('.selectbox-input')[0].value = this.selected.get(this.attr);
+            if (!this.attr) {
+                this.previousValue = '';
+            } else {
+                this.previousValue = this.selected.get(this.attr);
+            }
+
+            this.$('.selectbox-input')[0].value = this.previousValue;
+        } else {
+            this.previousValue = '';
         }
     },
 

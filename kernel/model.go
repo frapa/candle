@@ -39,6 +39,7 @@ func NewBaseModel() *BaseModel {
 	// initialize unique id
 	baseModel.Id = xid.New().String()
 	baseModel.CreatedOn = time.Now()
+	baseModel.Persisted = false
 
 	return baseModel
 }

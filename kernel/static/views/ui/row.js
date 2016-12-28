@@ -12,29 +12,40 @@ var Kernel_View_Ui_Row = AbstractView.extend({
     },
 
     buildCellData: function () {
-        this.linksFetched = false;
-
         var _this = this;
-        var linkCount = 0;
+        this.linksFetched = false;
+        var onLinksFetched = new AsyncNotificationManager(function () {
+            _this.trigger('links_fetched')
+            _this.linksFetched = true;
+        });
+
         this.columnData = _.map(this.columns, function (col) {
             var cellData = {
                 attr: col.attr,
                 link: col.link,
+                computed: false,
+                linkedCollection: col.linkedCollection,
+                linkedCollectionInst: col.linkedCollectionInst,
+                onSave: col.onSave
             };
-                
+
             if (col.attr !== undefined && col.link === undefined) {
                 var data = _this.model.get(col.attr);
                 cellData.data = data === undefined ? '' : data;
                 cellData.type = _this.model.types[col.attr];
             } else if (col.compute !== undefined) {
-                cellData.data = col.compute(_this.model);
+                cellData.data = col.compute(_this.model, cellData, onLinksFetched);
+                cellData.type = col.type;
+                cellData.computed = true;
             } else if (col.method !== undefined) {
-                cellData.data = _this.model[col.method]();
+                cellData.data = _this.model[col.method](cellData, onLinksFetched);
+                cellData.type = col.type;
+                cellData.computed = true;
             } else if (col.link !== undefined) {
                 if (_this.model.isNew()) {
                     cellData.data = '';
                 } else {
-                    linkCount++;
+                    onLinksFetched.waitForAction();
                     _this.model.to(col.link)
                     .fetch({
                         success: function (collection) {
@@ -45,11 +56,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                                 cellData.collection = collection;
                             }
 
-                            linkCount--;
-                            if (linkCount == 0) {
-                                _this.trigger('links_fetched')
-                                _this.linksFetched = true;
-                            }
+                            onLinksFetched.notifyEnd();
                         }
                     });
                 }
@@ -60,6 +67,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
             return cellData;
         });
+
+        onLinksFetched.notifyEnd();
     },
     
     /* Actions can be specified with the following object
@@ -177,7 +186,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             }
         };
 
-        if (!this.linksFetched && !this.model.isNew()) {
+        if (!this.linksFetched) {
             options.anmgr.waitForAction();
             this.listenToOnce(this, 'links_fetched',
                 renderIntern.bind(null, true));
@@ -197,9 +206,11 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 _this.inlineEditingActivated = true;
                 var $current = _this.$el;
 
+                console.log(11233);
                 var anmgr = new AsyncNotificationManager(function () {
                     $current.replaceWith(_this.$el);
                     _this.trigger('activated');
+                    console.log(_this.columnData);
                 });
 
                 _this.render({
@@ -227,7 +238,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             _this.trigger('saved');
         });
 
-        this.buildCellData(true);
+        this.buildCellData();
         this.render({
             inlineEditing: false,
             anmgr: replaceWhenReady
@@ -249,16 +260,23 @@ var Kernel_View_Ui_Row = AbstractView.extend({
     },
 
     createEditingWidget: function (cell, anmgr) {
-        if (cell.type === 'string' || cell.type === 'int64') {
+        var $cell = $('<td class="widget">' +
+            '<div class="widget-helper"></div></td>');
+
+        if (cell.type === 'string' || cell.type === 'int64' || cell.type === 'float') {
             cell.widget = new Kernel_View_Ui_Entry().render();
+            console.log(999, cell, this.linksFetched);
             cell.widget.setValue(cell.data);
 
             // update model on change
-            this.listenTo(cell.widget, 'change',
-                this.updateModel.bind(this, false, cell));
+            if (cell.onSave !== undefined) {
+                this.listenTo(cell.widget, 'change',
+                    cell.onSave.bind(null, cell, this.model));
+            } else {
+                this.listenTo(cell.widget, 'change',
+                    this.updateModel.bind(this, false, cell));
+            }
 
-            var $cell = $('<td class="widget">' +
-                '<div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
 
             return $cell
@@ -267,36 +285,54 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             cell.widget.setValue(cell.data);
             
             // update model on change
-            this.listenTo(cell.widget, 'change', function (date) {
-                this.updateModel(false, cell, date.toISOString());
-            });
+            if (cell.onSave !== undefined) {
+                this.listenTo(cell.widget, 'change',
+                    cell.onSave.bind(null, cell, this.model));
+            } else {
+                this.listenTo(cell.widget, 'change', function (date) {
+                    this.updateModel(false, cell, date.toISOString());
+                });
+            }
 
-            var $cell = $('<td class="widget">' +
-                '<div class="widget-helper"></div></td>');
             $cell.find('div').append(cell.widget.$el);
 
             return $cell
         } else if (cell.type === 'link') {
-            var linkedCollection = window[this.model.linkTypes[cell.link]];
+            var linkedCollectionInst = cell.linkedCollectionInst;
+            if (linkedCollectionInst === undefined) {
+                var linkedCollection = null;
+                if (cell.linkedCollection) {
+                    linkedCollection = cell.linkedCollection;
+                } else {
+                    linkedCollection = window[this.model.linkTypes[cell.link]];
+                }
+
+                linkedCollectionInst = new linkedCollection();
+            }
+
             cell.widget = new Kernel_View_Ui_Selectbox({
-                collection: new linkedCollection(),
+                collection: linkedCollectionInst,
                 attr: cell.attr,
                 selected: cell.collection === undefined ?
                     undefined : cell.collection.at(0)
-            }).render({
-                anmgr: anmgr
-            });
-
-            var $cell = $('<td class="widget">' +
-                '<div class="widget-helper"></div></td>');
+            })
 
             this.listenToOnce(cell.widget, 'render', function () {
                 $cell.find('div').append(cell.widget.$el);
             });
+
+            cell.widget.render({
+                anmgr: anmgr
+            });
             
             // update model on change
-            this.listenTo(cell.widget, 'change',
-                this.updateModel.bind(this, true, cell));
+            if (cell.onSave !== undefined) {
+                this.listenTo(cell.widget, 'change',
+                    cell.onSave.bind(null, cell, this.model));
+            } else {
+                this.listenTo(cell.widget, 'change',
+                    this.updateModel.bind(this, true, cell));
+            }
 
             return $cell
         } else {

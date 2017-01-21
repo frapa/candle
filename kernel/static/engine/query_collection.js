@@ -9,6 +9,15 @@ var QueryCollection = Backbone.Collection.extend({
         }
 
         this.fetched = false;
+        this.started = false;
+
+        this.queryParams = {};
+    },
+
+    params: function (params) {
+        var clonedCollection = this.clone();
+        clonedCollection.queryParams = _.extend(clonedCollection.queryParams, params)
+        return clonedCollection;
     },
 
     /* This is a performance enhancement. If the collection
@@ -23,14 +32,29 @@ var QueryCollection = Backbone.Collection.extend({
             var _this = this;
 
             var innerSuccess = options.success;
-            var outerSuccess = function (collection, response, options_) {
-                _this.fetched = true;
-                _this.trigger('fetched');
-                innerSuccess(collection, response, options_);
-            };
-            options.success = outerSuccess;
+            if (this.started) {
+				this.outerSuccess.successCallbacks.push(innerSuccess);
+            } else {
+				var SuccessManager = function () {
+                    var _this2 = this;
+                    this.successCallbacks = [innerSuccess];
+					this.call = function (collection, response, options_) {
+                        _this.fetched = true;
+                        _this.trigger('fetched');
 
-            Backbone.Collection.prototype.fetch.call(this, options);
+                        _.each(_this2.successCallbacks, function (c) {
+                            c(collection, response, options_);
+                        });
+					};
+                };
+
+                this.outerSuccess = new SuccessManager();
+                options.success = this.outerSuccess.call;
+
+                this.started = true; // to avoid multiple requests for no reason
+                Backbone.Collection.prototype.fetch.call(this,
+                    _.extend({data: $.param(_this.queryParams)}, options));
+            }
         }
     }
 });

@@ -206,11 +206,9 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 _this.inlineEditingActivated = true;
                 var $current = _this.$el;
 
-                console.log(11233);
                 var anmgr = new AsyncNotificationManager(function () {
                     $current.replaceWith(_this.$el);
                     _this.trigger('activated');
-                    console.log(_this.columnData);
                 });
 
                 _this.render({
@@ -265,7 +263,6 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
         if (cell.type === 'string' || cell.type === 'int64' || cell.type === 'float') {
             cell.widget = new Kernel_View_Ui_Entry().render();
-            console.log(999, cell, this.linksFetched);
             cell.widget.setValue(cell.data);
 
             // update model on change
@@ -281,7 +278,9 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
             return $cell
         } else if (cell.type === 'Time') {
-            cell.widget = new Kernel_View_Ui_Date().render();
+            cell.widget = new Kernel_View_Ui_Date({
+                label: cell.attr
+            }).render();
             cell.widget.setValue(cell.data);
             
             // update model on change

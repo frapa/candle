@@ -2,7 +2,8 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
     initialize: function (options) {
         this.selectedDate = new Date();
 
-        Kernel_View_Ui_Entry.prototype.initialize.call(this, options);
+        Kernel_View_Ui_Entry.prototype.initialize
+            .call(this, _.extend({}, options));
 
         if (!global.dayNames) {
             var lang = window.navigator.language;

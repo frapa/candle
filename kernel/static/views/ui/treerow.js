@@ -240,5 +240,13 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
         });
 
         cell.prepend($indicator);
+    },
+
+    remove: function () {
+        AbstractView.prototype.remove.call(this);
+
+        _.each(this.subRows, function (row) {
+            row.remove();
+        });
     }
 });

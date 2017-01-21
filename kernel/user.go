@@ -2,18 +2,18 @@ package kernel
 
 import (
 	"crypto/sha512"
+	"errors"
 	"golang.org/x/crypto/pbkdf2"
-	"strings"
 	"time"
 )
 
 type User struct {
 	BaseModel
+	Email    string
 	UserName string
 	Salt     string
 	PswHash  string
-	//	CreatedOn time.Time  // CreationDate in Model definition?
-	LastLog time.Time
+	LastLog  time.Time
 }
 
 func init() {
@@ -25,14 +25,25 @@ func NewUser(name string, psw string) *User {
 	u.BaseModel = *NewBaseModel()
 	u.UserName = name
 
-	// XXX metti un nome un poco piú chiaro se riesci, poi rimuovi i commenti [pasa]
-	u.Salt = RandStringFixedLength(saltLen) // XXX bel nome per una funzione! Io non so che fa, se non l'ho scritta...
+	u.Salt = RandStringFixedLength(saltLen)
 	u.PswHash = pswToHash(psw, u.Salt)
 
-	//u.CreatedOn = time.Now().UTC()
-	//u.LastLog = u.CreatedOn
-
 	return u
+}
+
+func (u *User) CanCreate(model string) (bool, Group) {
+	groups := u.To("Groups")
+
+	var group Group
+	for groups.Next() {
+		groups.Get(&group)
+
+		if group.CanCreate(model) {
+			return true, group
+		}
+	}
+
+	return false, Group{}
 }
 
 // generate Hash from password string
@@ -44,26 +55,25 @@ func pswToHash(psw string, salt string) string {
 }
 
 // check password to login
-func LogIn(name string, psw string) {
-	var u User
-	All("User").Filter("UserName", "=", name).Get(&u)
+func CheckUserPassword(name string, psw string) error {
+	user := All("User").Filter("UserName", "=", name)
 
-	// XXX per il confronto tra stringhe io trovo molto piú pulito
-	// un semplice if con ==
-	// Altre idee: perché non fare una funzione che ritorna bool?
-	switch strings.Compare(pswToHash(psw, u.Salt), u.PswHash) {
-	case 0:
-		u.LastLog = time.Now().UTC()
-	case 1, -1:
-		LogInFailed()
+	// Allow login with email
+	if user.Count() == 0 {
+		user = All("User").Filter("Email", "=", name)
+
+		// This means the user does not exist
+		if user.Count() == 0 {
+			return errors.New("User does not exist.")
+		}
 	}
-}
 
-/* used only in case of many repetition of the function
- * func FindUser(name string) *User {
-	return All("User").Filter("username", "=", name).Get(&u)
-}*/
+	var u User
+	user.Get(&u)
 
-func LogInFailed() {
-
+	if pswToHash(psw, u.Salt) == u.PswHash {
+		return nil
+	} else {
+		return errors.New("Password is wrong.")
+	}
 }

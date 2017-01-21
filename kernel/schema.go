@@ -364,3 +364,15 @@ func createTableFromModel(model AnyModel) []*table {
 
 	return tabs
 }
+
+func ModelHasParent(modelName string, parentName string) bool {
+	hineritanceChain := schema.Tables[modelName]
+
+	for _, parent := range hineritanceChain {
+		if parent.name == parentName {
+			return true
+		}
+	}
+
+	return false
+}

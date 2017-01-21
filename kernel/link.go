@@ -15,15 +15,15 @@ type LinkInfo struct {
 // and the second key being the attribute name
 var linkTable map[string]map[string]LinkInfo
 
-func init() {
-	initLinkTable()
-}
-
 func initLinkTable() {
 	linkTable = make(map[string]map[string]LinkInfo)
 }
 
 func DefineLink(origin AnyModel, attr string, target AnyModel, inverse_ ...string) {
+	if linkTable == nil {
+		initLinkTable()
+	}
+
 	inverse := ""
 	if len(inverse_) == 1 {
 		inverse = inverse_[0]
@@ -37,6 +37,7 @@ func DefineLink(origin AnyModel, attr string, target AnyModel, inverse_ ...strin
 	}
 
 	linkTable[originClass][attr] = LinkInfo{originClass, attr, targetClass, inverse}
+
 	if inverse != "" {
 		if _, ok := linkTable[targetClass]; !ok {
 			linkTable[targetClass] = make(map[string]LinkInfo)
@@ -47,6 +48,18 @@ func DefineLink(origin AnyModel, attr string, target AnyModel, inverse_ ...strin
 
 func GetLinkInfo(origin string, attr string) LinkInfo {
 	return linkTable[origin][attr]
+}
+
+func ParentHasLink(modelName string, attr string) string {
+	hineritanceChain := schema.Tables[modelName]
+
+	for _, parent := range hineritanceChain {
+		if _, ok := linkTable[parent.name][attr]; ok {
+			return parent.name
+		}
+	}
+
+	return ""
 }
 
 func Link(origin AnyModel, attr string, target AnyModel, linkInverse bool) error {
@@ -60,17 +73,24 @@ func Link(origin AnyModel, attr string, target AnyModel, linkInverse bool) error
 	targetClass := target.GetClass()
 
 	// check the existance of the link
+	infoOriginClass := originClass
 	if _, ok := linkTable[originClass][attr]; !ok {
-		panic(originClass + " has no link '" + attr + "'")
+		// check if some parent has the link
+		if infoOriginClass = ParentHasLink(originClass, attr); infoOriginClass == "" {
+			panic(originClass + " has no link '" + attr + "'")
+		}
 	}
 
-	link := GetLinkInfo(originClass, attr)
+	link := GetLinkInfo(infoOriginClass, attr)
 	// check the target type
 	if link.Target != targetClass {
-		panic("Trying to create link: \n\t" +
-			originClass + " --|" + attr + "|--> " + targetClass +
-			"\nExpected: \n\t" +
-			originClass + " --|" + attr + "|-> " + link.Target)
+		// check the target type is not a parent model
+		if !ModelHasParent(targetClass, link.Target) {
+			panic("Trying to create link: \n\t" +
+				originClass + " --|" + attr + "|--> " + targetClass +
+				"\nExpected: \n\t" +
+				originClass + " --|" + attr + "|--> " + link.Target)
+		}
 	}
 
 	// Check for duplicate links

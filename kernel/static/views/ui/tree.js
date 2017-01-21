@@ -105,7 +105,9 @@ var Kernel_View_Ui_Tree = AbstractView.extend({
 
     renderRows: function (anmgr) {
         if (this.tree.length) {
-            //_.invoke(this.rows, 'remove');
+            _.invoke(this.rows, 'remove');
+            this.rows = [];
+
             var rowsTree = this.tree.map(this.generateRow.bind(this));
             var $rows = _.flatten(rowsTree, true);
             this.$tbody.append($rows);

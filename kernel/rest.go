@@ -54,18 +54,20 @@ func MatchResource(ctx *ripple.Context) (*RestResource, bool) {
 	}
 }
 
-func GetLinkedResource(modelName string, q *query, linkName string) ([]AnyModel, error) {
+func GetLinkedResource(modelName string, q *query, linkName string) (*query, error) {
 	// First check that the link exists
 	if info, ok := linkTable[modelName][linkName]; ok {
 		// Then check that the corresponding resource exists
 		// Without this it would be possible to retrieve linked
 		// but unregistered models, a serious security hole!
-		if targetResource, ok := restResources.Models[info.Target]; ok {
+		if _, ok := restResources.Models[info.Target]; ok {
 			// All models where requested
 			targetModels := q.To(linkName)
 
+			return targetModels, nil
+			// This isn't necessary anymore due to query.GetAll()
 			// Check if collection is empty
-			if targetModels.Count() == 0 {
+			/*if targetModels.Count() == 0 {
 				return []AnyModel{}, nil
 			} else {
 				var collection []AnyModel
@@ -75,14 +77,13 @@ func GetLinkedResource(modelName string, q *query, linkName string) ([]AnyModel,
 					collection = append(collection, targetModel)
 				}
 
-				return collection, nil
-			}
+				return []AnyModel{}, nil
+			}*/
 		} else {
-			return []AnyModel{}, errors.New("Linked class in not registered as rest resource")
+			return new(query), errors.New("Linked class in not registered as rest resource")
 		}
 	} else {
-		println(modelName, " ", linkName)
-		return []AnyModel{}, errors.New("Link does not exist")
+		return new(query), errors.New("Link does not exist")
 	}
 }
 
@@ -233,6 +234,9 @@ func StartRestServer() {
 	App.AddRoute(ripple.Route{Pattern: "/api/:model/:id", Controller: "rest"})
 	App.AddRoute(ripple.Route{Pattern: "/api/:model/:id/:link", Controller: "rest"})
 
+	// Init extra controllers in kernel
+	initLoginController()
+
 	// Start the server
 	http.HandleFunc("/api/", App.ServeHTTP)
 }
@@ -246,13 +250,26 @@ func (c *GenericRestController) Authenticate(ctx *ripple.Context) bool {
 	user := ctx.GetQueryParam("user")
 	password := ctx.GetQueryParam("psw")
 
-	// TODO: check user and password
-	println(user, " ", password)
-	return true
+	if err := CheckUserPassword(user, password); err == nil {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *GenericRestController) GetUser(ctx *ripple.Context) *User {
+	userName := ctx.GetQueryParam("user")
+
+	filters := []filter{F("UserName", "=", userName), F("Email", "=", userName)}
+
+	var user User
+	All("User").Filter(Or(filters...)).Get(&user)
+
+	return &user
 }
 
 func (c *GenericRestController) ApplyQueryParameters(q *query, ctx *ripple.Context) *query {
-	modelName := ctx.Params["model"]
+	modelName := q.tableName
 	table := GetTablesFromModelClass(modelName)[0]
 
 	nq := q.Clone()
@@ -307,6 +324,7 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 		return
 	}
 
+	user := c.GetUser(ctx)
 	id := ctx.Params["id"]
 	link := ctx.Params["link"]
 
@@ -315,34 +333,37 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 			// All models where requested
 			unfilteredModels := All(resource.modelName)
 			models := c.ApplyQueryParameters(unfilteredModels, ctx)
+			allowedModels := models.ApplyReadPermissions(user)
 
 			// Check if collection is empty
-			if models.Count() == 0 {
+			if allowedModels.Count() == 0 {
 				ctx.Response.Body = "[]"
 			} else {
-				ctx.Response.Body = models.GetAll()
+				ctx.Response.Body = allowedModels.GetAll()
 			}
 		} else if link == "" {
 			// Only a specific model was requested
 			model := NewInstanceOf(resource.modelName)
 			matchingModel := All(resource.modelName).Filter("Id", "=", id)
+			allowedMatchingModel := matchingModel.ApplyReadPermissions(user)
 
 			// Check if requested id exists
-			if matchingModel.Count() == 0 {
+			if allowedMatchingModel.Count() == 0 {
 				NewRestError("There is no '" + resource.modelName +
-					"' with id '" + id + "'.").Send(ctx)
+					"' with id '" + id + "' (or permissions missing).").Send(ctx)
 			} else {
-				matchingModel.Get(model)
+				allowedMatchingModel.Get(model)
 				ctx.Response.Body = model
 			}
 		} else {
 			// A linked model was requested
 			matchingModel := All(resource.modelName).Filter("Id", "=", id)
+			allowedMatchingModel := matchingModel.ApplyReadPermissions(user)
 
 			// Check if requested id exists
-			if matchingModel.Count() == 0 {
+			if allowedMatchingModel.Count() == 0 {
 				NewRestError("There is no '" + resource.modelName +
-					"' with id '" + id + "'.").Send(ctx)
+					"' with id '" + id + "' (or permissions missing).").Send(ctx)
 			} else {
 				collection, err := GetLinkedResource(resource.modelName, matchingModel, link)
 				if err != nil {
@@ -350,7 +371,9 @@ func (c *GenericRestController) Get(ctx *ripple.Context) {
 					NewRestError("There is no relation '" + link +
 						"' for model '" + resource.modelName + "'").Send(ctx)
 				} else {
-					ctx.Response.Body = collection
+					collection = c.ApplyQueryParameters(collection, ctx)
+					collection = collection.ApplyReadPermissions(user)
+					ctx.Response.Body = collection.GetAll()
 				}
 			}
 		}
@@ -362,20 +385,27 @@ func (c *GenericRestController) Post(ctx *ripple.Context) {
 		return
 	}
 
+	user := c.GetUser(ctx)
 	body := make([]byte, ctx.Request.ContentLength)
 	ctx.Request.Body.Read(body)
 
 	if resource, ok := MatchResource(ctx); ok {
-		// Create and save model
-		constructor := reflect.ValueOf(resource.constructor)
-		model := constructor.Call(nil)[0].Interface().(AnyModel)
+		if ok, group := user.CanCreate(resource.modelName); ok {
+			// Create and save model
+			constructor := reflect.ValueOf(resource.constructor)
+			model := constructor.Call(nil)[0].Interface().(AnyModel)
 
-		err := updateModel(body, model)
-		if err != nil {
-			err.(*RestError).Send(ctx)
+			err := updateModel(body, model)
+			if err != nil {
+				err.(*RestError).Send(ctx)
+			} else {
+				model.Link("Groups", group)
+				ctx.Response.Status = http.StatusCreated
+				ctx.Response.Body = model
+			}
 		} else {
-			ctx.Response.Status = http.StatusCreated
-			ctx.Response.Body = model
+			NewRestError("No permissions to create element of type " +
+				resource.modelName).Send(ctx)
 		}
 	}
 }
@@ -385,6 +415,7 @@ func (c *GenericRestController) Delete(ctx *ripple.Context) {
 		return
 	}
 
+	user := c.GetUser(ctx)
 	id := ctx.Params["id"]
 	if id == "" {
 		return
@@ -392,8 +423,15 @@ func (c *GenericRestController) Delete(ctx *ripple.Context) {
 
 	if resource, ok := MatchResource(ctx); ok {
 		var base BaseModel
-		All(resource.modelName).Filter("Id", "=", id).Get(&base)
-		base.Delete()
+		model := All(resource.modelName).Filter("Id", "=", id).ApplyWritePermissions(user)
+
+		if model.Count() == 0 {
+			NewRestError("Trying to delete unexistant '" + resource.modelName +
+				"' with id '" + id + "' (or permissions missing).").Send(ctx)
+		} else {
+			model.Get(&base)
+			base.Delete()
+		}
 	}
 }
 
@@ -402,6 +440,7 @@ func (c *GenericRestController) Put(ctx *ripple.Context) {
 		return
 	}
 
+	user := c.GetUser(ctx)
 	id := ctx.Params["id"]
 	if id == "" {
 		return
@@ -415,13 +454,14 @@ func (c *GenericRestController) Put(ctx *ripple.Context) {
 		// We fetch the right model
 		model := NewInstanceOf(resource.modelName)
 		matchingModel := All(resource.modelName).Filter("Id", "=", id)
+		allowedMatchingModel := matchingModel.ApplyWritePermissions(user)
 
 		// Check if requested id exists
-		if matchingModel.Count() == 0 {
+		if allowedMatchingModel.Count() == 0 {
 			NewRestError("There is no '" + resource.modelName +
-				"' with id '" + id + "'.").Send(ctx)
+				"' with id '" + id + "' (or permissions missing).").Send(ctx)
 		} else {
-			matchingModel.Get(model)
+			allowedMatchingModel.Get(model)
 			updateModel(body, model)
 			ctx.Response.Body = model
 		}

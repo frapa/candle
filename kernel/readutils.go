@@ -73,14 +73,14 @@ func (f filter) Clone() filter {
 	return fCopy
 }
 
-func (f *filter) computeSql() (string, []interface{}) {
+func (f *filter) computeSql(tableName string) (string, []interface{}) {
 	if f.type_ == ATTR {
-		return f.column + " " + f.operator + " ?", []interface{}{f.value}
+		return "\"" + tableName + "\"." + f.column + " " + f.operator + " ?", []interface{}{f.value}
 	} else if f.type_ == AND || f.type_ == OR {
 		var filters []string
 		var values []interface{}
 		for _, f := range f.subFilters {
-			fsql, vals := f.computeSql()
+			fsql, vals := f.computeSql(tableName)
 			filters = append(filters, "("+fsql+")")
 			values = append(values, vals...)
 		}
@@ -93,6 +93,10 @@ func (f *filter) computeSql() (string, []interface{}) {
 		return strings.Join(filters, op), values
 	}
 	return "", nil // stupid go
+}
+
+func (f *filter) IsEmpty() bool {
+	return f.type_ == 0
 }
 
 // ORDER -----------------------------------------------------------
@@ -154,6 +158,8 @@ func (q *query) Clone() *query {
 	qCopy.filter = q.filter.Clone()
 	qCopy.subId = q.subId
 	qCopy.subAttr = q.subAttr
+	qCopy.joinQuery = q.joinQuery
+	qCopy.linkQuery = q.linkQuery
 
 	if q.subQuery != nil {
 		qCopy.subQuery = q.subQuery.Clone()
@@ -232,7 +238,7 @@ func (q *query) computeQuery() (string, []interface{}) {
 
 	filters := ""
 	if q.filter.type_ != 0 {
-		fsql, vals := q.filter.computeSql()
+		fsql, vals := q.filter.computeSql(q.tableName)
 		filters = " WHERE " + fsql
 		args = append(args, vals...)
 	}
@@ -259,20 +265,51 @@ func (q *query) computeQuery() (string, []interface{}) {
 		subSql, subArgs := subQ.computeQuery()
 		tempTableName := "tab_" + xid.New().String()
 
+		// I suddenly realize I need to support link defined in parent
+		// classes. For this reason the OriginClass and TargetClass will be replaced
+		// by the proper classes and not assumed to simply be the q.tableName and
+		// subQ.tableName
+		originClass := subQ.tableName
+		if _, ok := linkTable[originClass][q.subAttr]; !ok {
+			// there is no link in the current class, maybe it's in
+			// a parent one
+			if originClass = ParentHasLink(originClass, q.subAttr); originClass == "" {
+				panic("This should not happen: link not found while generating sql")
+			}
+		}
+		/*linkInfo := GetLinkInfo(originClass, q.subAttr)
+		targetClass := linkInfo.Target*/
+
 		// remove trailing ; in subSql
 		subSql = subSql[:len(subSql)-1]
 
 		sql = "SELECT \"" + q.tableName + "\".* FROM (" + subSql + ") AS " + tempTableName +
-			" INNER JOIN _Links ON _Links.OriginId=" + tempTableName + ".Id AND " +
-			"_Links.OriginClass='" + subQ.tableName + "' AND _Links.TargetClass='" + q.tableName +
-			"' AND _Links.Attr='" + q.subAttr + "' INNER JOIN \"" +
-			q.tableName + "\" ON _Links.TargetId=\"" + q.tableName + "\".Id" + filters + orderLimitOffset + ";"
+			" INNER JOIN _Links ON _Links.OriginId=" + tempTableName + ".Id " +
+			"AND _Links.OriginClass='" + originClass +
+			//"' AND _Links.TargetClass='" + targetClass +
+			"' AND _Links.Attr='" + q.subAttr +
+			"' INNER JOIN \"" + q.tableName + "\" ON _Links.TargetId=\"" + q.tableName + "\".Id" +
+			filters + orderLimitOffset + ";"
 		args = append(subArgs, args...)
 	} else if q.linkQuery {
 		subQ := q.subQuery
+
+		originClass := subQ.tableName
+		if _, ok := linkTable[originClass][q.subAttr]; !ok {
+			// there is no link in the current class, maybe it's in
+			// a parent one
+			if originClass = ParentHasLink(originClass, q.subAttr); originClass == "" {
+				panic("This should not happen: link not found while generating sql")
+			}
+		}
+		/*linkInfo := GetLinkInfo(originClass, q.subAttr)
+		targetClass := linkInfo.Target*/
+
 		sql = "SELECT \"" + q.tableName + "\".* FROM _Links INNER JOIN \"" + q.tableName +
-			"\" ON _Links.OriginClass='" + subQ.tableName + "' AND _Links.OriginId='" + subQ.subId + "'.Id " +
-			" AND _Links.TargetClass='" + q.tableName + "' AND _Links.TargetId=\"" + q.tableName + "\".Id " +
+			"\" ON _Links.OriginClass='" + originClass +
+			"' AND _Links.OriginId='" + subQ.subId + "'.Id " +
+			//" AND _Links.TargetClass='" + targetClass +
+			" AND _Links.TargetId=\"" + q.tableName + "\".Id " +
 			" AND _Links.Attr='" + q.subAttr + "'"
 	} else {
 		sql = "SELECT * FROM \"" + q.tableName + "\"" + filters + orderLimitOffset + ";"
@@ -328,7 +365,11 @@ func (q *query) GetIds() []string {
 	ids := []string{}
 
 	sql, args := q.computeQuery()
+
+	// Hack: Optimization to only retrieve the ids,
+	// thus speeding up the database search.
 	sql = strings.Replace(sql, "*", "Id", 1)
+	//fmt.Println(sql, args)
 
 	//fmt.Println(sql, args)
 	rows, err := GetDb().Query(sql, args...)
@@ -360,12 +401,48 @@ func (q *query) Exclude(ids []string) *query {
 	return nq
 }
 
+func (q *query) Include(ids []string) *query {
+	nq := q.Clone()
+
+	if len(ids) == 0 {
+		if nq.filter.IsEmpty() {
+			nq = nq.Filter(F("Id", "=", "unexistant"))
+		} else {
+			nq = nq.Filter(And(F("Id", "=", "unexistant"), nq.filter))
+		}
+	} else {
+		filters := []filter{}
+		for _, id := range ids {
+			filters = append(filters, F("Id", "=", id))
+		}
+
+		orFilter := Or(filters...)
+		if nq.filter.IsEmpty() {
+			nq = nq.Filter(orFilter)
+		} else {
+			nq = nq.Filter(And(orFilter, nq.filter))
+		}
+	}
+
+	return nq
+}
+
+// Takes a query and filters the objects which
+// are accessible by the user
+func (q *query) ApplyReadPermissions(u *User) *query {
+	return q.Include(u.To("Groups").Filter("Permissions", "!=", "w").To("Models").GetIds())
+}
+
+func (q *query) ApplyWritePermissions(u *User) *query {
+	return q.Include(u.To("Groups").Filter("Permissions", "!=", "r").To("Models").GetIds())
+}
+
 /* This is really magic. "Lasciate ogni speranza o voi che entrate"
  */
 func (q *query) retrieveData() error {
 	sql, args := q.computeQuery()
 
-	//fmt.Println(sql, args)
+	//fmt.Println(sql, args, q, q.subQuery)
 	rows, err := GetDb().Query(sql, args...)
 	if err != nil {
 		return err
@@ -454,6 +531,27 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 			}
 		}
 	}
+}
+
+// This function creates a query object
+// from ids of objects
+func MergeIds(modelName string, ids []string) *query {
+	if _, ok := schema.Tables[modelName]; !ok {
+		panic("Model '" + modelName + "' does not exist.")
+	}
+
+	q := new(query)
+	q.tableName = modelName
+
+	var filters []filter
+	for _, id := range ids {
+		filters = append(filters, F("Id", "=", id))
+	}
+
+	q.filter = Or(filters...)
+
+	return q
+
 }
 
 func (q *query) Get(str interface{}) {

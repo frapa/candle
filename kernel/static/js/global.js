@@ -15,5 +15,7 @@ var global = {
     dateParse: function (string) {
         var pieces = string.split('.');
         return new Date(pieces[2], pieces[1]-1, pieces[0]);
-    }
+    },
+    username: localStorage['username'],
+    password: localStorage['password']
 };

@@ -76,6 +76,10 @@ input[type="text"]:focus ~ .input-bar::after {
     border-bottom: 2px solid §primary-color;
 }
 
+input[type="text"]:invalid {
+    box-shadow: none;
+}
+
 /* Selectbox */
 .selectbox {
     position: absolute;

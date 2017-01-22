@@ -221,28 +221,34 @@ var Kernel_View_Ui_Row = AbstractView.extend({
     },
 
     saveEditedRow: function () {
+        var _this = this;
+
         if (this.saveAction) {
             this.saveAction(this.model);
         }
 
-        this.model.save();
-
-        this.inlineEditingActivated = false;
-
         var $current = this.$el;
-        var _this = this;
         var replaceWhenReady = new AsyncNotificationManager(function () {
             $current.replaceWith(_this.$el);
-            _this.trigger('saved');
         });
 
-        this.buildCellData();
-        this.render({
-            inlineEditing: false,
-            anmgr: replaceWhenReady
+        $current.find('.icon-floppy')[0].className = "icon-spin1 animation-spin";
+
+        this.model.save(undefined, {
+            success: function (model) {
+                _this.inlineEditingActivated = false;
+
+                _this.buildCellData();
+                _this.render({
+                    inlineEditing: false,
+                    anmgr: replaceWhenReady
+                });
+                
+                replaceWhenReady.notifyEnd();
+            }
         });
-        
-        replaceWhenReady.notifyEnd();
+
+        _this.trigger('saved');
     },
 
     updateModel: function (link, cell, value) {
@@ -281,7 +287,6 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             cell.widget = new Kernel_View_Ui_Date({
                 label: cell.attr
             }).render();
-            cell.widget.setValue(cell.data);
             
             // update model on change
             if (cell.onSave !== undefined) {
@@ -294,6 +299,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             }
 
             $cell.find('div').append(cell.widget.$el);
+
+            cell.widget.setValue(cell.data);
 
             return $cell
         } else if (cell.type === 'link') {

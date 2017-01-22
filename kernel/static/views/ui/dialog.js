@@ -60,7 +60,7 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
                 }
 
                 if (callback.call(_this, _this.subviews)) {
-                    global.mainView.closeDialog();
+                    _this.close();
                 }
             });
             $footer.append($button)

@@ -152,11 +152,5 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         });
 
         this.rows.push(row);
-    },
-
-    remove: function () {
-        AbstractView.prototype.remove.call(this);
-
-
     }
 });

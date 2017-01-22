@@ -127,6 +127,8 @@ var AbstractView = Backbone.View.extend({
     },
 
     remove: function () {
+        this.rendered = false;
+
         Backbone.View.prototype.remove.call(this);
 
         // Remove subviews before removing current view

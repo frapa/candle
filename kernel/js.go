@@ -2,7 +2,7 @@ package kernel
 
 import (
 	"github.com/dchest/cssmin"
-	"github.com/dchest/htmlmin"
+	//"github.com/dchest/htmlmin"
 	"github.com/dchest/jsmin"
 	"io/ioutil"
 	"os"
@@ -50,10 +50,13 @@ func bindTemplate(path string, content []byte) []byte {
 		panic(err)
 	}
 
-	minifiedTemplate, err := htmlmin.Minify(template, nil)
-	if err != nil {
-		panic(err)
-	}
+	minifiedTemplate := template
+	/*
+		minifiedTemplate, err := htmlmin.Minify(template, nil)
+		if err != nil {
+			panic(err)
+		}
+	*/
 
 	escTemplate1 := strings.Replace(string(minifiedTemplate), "\n", "", -1)
 	escTemplate2 := escapeSlashes(escTemplate1)
@@ -180,7 +183,11 @@ func GenerateIndex(title string) {
 	html += "<link rel=\"stylesheet\" type=\"text/css\" href=\"/static/concat.css\">"
 
 	// finish off
-	html += "</head><body id=\"app\"><subview name=\"app\"></subview><subview name=\"dialog\"></subview></body></html>"
+	html += "</head><body id=\"app\">" +
+		"<subview name=\"app\"></subview>" +
+		"<subview name=\"dialog\"></subview>" +
+		"<subview name=\"login-screen\"></subview>" +
+		"</body></html>"
 
 	index = []byte(html)
 }

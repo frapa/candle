@@ -40,6 +40,7 @@ var QueryCollection = Backbone.Collection.extend({
                     this.successCallbacks = [innerSuccess];
 					this.call = function (collection, response, options_) {
                         _this.fetched = true;
+                        _this.started = false;
                         _this.trigger('fetched');
 
                         _.each(_this2.successCallbacks, function (c) {
@@ -55,6 +56,14 @@ var QueryCollection = Backbone.Collection.extend({
                 Backbone.Collection.prototype.fetch.call(this,
                     _.extend({data: $.param(_this.queryParams)}, options));
             }
+        }
+    },
+
+    resetFetched: function () {
+        if (!this.started) {
+            this.fetched = false;
+        } else {
+            console.error("Trying to reset collection while fetching it. Try later.");
         }
     }
 });

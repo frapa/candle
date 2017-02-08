@@ -176,3 +176,98 @@ input[type="text"]:invalid {
 .datepicker .next:hover {
     color: §primary-color;
 }
+
+/* file upload */
+input[type="file"] {
+    display: none;
+}
+
+.file-upload .drop {
+    border: 1px solid §border-color;
+    padding: 1.5em;
+    margin: 1em 0;
+    text-align: center;
+    background: §background-secondary-color;
+}
+
+.file-upload .drop div {
+    margin: 0.5em 0;
+}
+
+.file-upload .or {
+    font-size: 90%;
+}
+
+.file-upload .files {
+    margin-bottom: 2em;
+}
+
+.file-upload .files > div {
+    padding: 1em 1.5em;
+    border: 1px solid §border-color;
+    margin-bottom: 0.5em;
+}
+
+.file-upload .files > div.valid {
+    border-left: 0.25em solid green;
+}
+
+.file-upload .files > div.invalid {
+    border-left: 0.25em solid red;
+}
+
+.files .file-name {
+    
+}
+
+.files .file-size {
+    color: §secondary-text-color;
+}
+
+/* buttons */
+button.flat {
+    margin: 0 0.5em;
+    padding: 0.25em 1em;
+    border: 0;
+    background: transparent;
+
+    font-size: 100%;
+    font-weight: 600;
+    color: §primary-color;
+    text-transform: uppercase;
+}
+
+button.flat:hover {
+    background: §border-color-light;
+    cursor: pointer;
+}
+
+button.flat:active {
+    color: §background-primary-color;
+    background: §primary-color;
+}
+
+button.raised {
+    margin: 0 0.5em;
+    padding: 0.5em 1em;
+    border: 0;
+    border-radius: 0.1em;
+    background: §primary-color;
+
+    font-size: 100%;
+    font-weight: 600;
+    color: §primary-text-color;
+    text-transform: uppercase;
+
+    box-shadow: 0 0.05em 0.1em §border-color-dark;
+}
+
+button.raised:hover {
+    background: §primary-color-similar;
+    cursor: pointer;
+}
+
+button.raised:active {
+    color: §background-primary-color;
+    box-shadow: 0 0 0.1em §border-color-dark;
+}

@@ -127,9 +127,7 @@ func updateLinks(model AnyModel, linkMap map[string]interface{}) error {
 
 		// check if link exists
 		modelName := model.GetClass()
-		if _, ok := linkTable[modelName][attrName]; ok {
-			linkInfo := GetLinkInfo(modelName, attrName)
-
+		if linkInfo, ok := linkTable[modelName][attrName]; ok {
 			for _, targetIdInt := range links {
 				targetId := targetIdInt.(string)
 				target := All(linkInfo.Target).Filter("Id", "=", targetId)
@@ -161,9 +159,7 @@ func removeLinks(model AnyModel, unlinkMap map[string]interface{}) error {
 
 		// check if link exists
 		modelName := model.GetClass()
-		if _, ok := linkTable[modelName][attrName]; ok {
-			linkInfo := GetLinkInfo(modelName, attrName)
-
+		if linkInfo, ok := GetLinkInfo(modelName, attrName); ok {
 			for _, targetIdInt := range links {
 				targetId := targetIdInt.(string)
 

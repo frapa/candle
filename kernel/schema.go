@@ -284,7 +284,7 @@ func (t *table) getUpdateSql(rec *record) (string, []interface{}) {
 		value := rec.fields[field]
 
 		if type_ == "Time" {
-			strValues = append(strValues, value.(time.Time).Format(ISO8601))
+			strValues = append(strValues, value.(time.Time).Format(time.RFC3339))
 		} else {
 			strValues = append(strValues, fmt.Sprintf("%v", value))
 		}
@@ -306,7 +306,7 @@ func (t *table) getInsertSql(rec *record) (string, []interface{}) {
 		value := rec.fields[field]
 
 		if type_ == "Time" {
-			strValues = append(strValues, value.(time.Time).Format(ISO8601))
+			strValues = append(strValues, value.(time.Time).Format(time.RFC3339))
 		} else {
 			strValues = append(strValues, fmt.Sprintf("%v", value))
 		}

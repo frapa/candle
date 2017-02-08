@@ -1,0 +1,32 @@
+.status-message {
+    position: fixed;
+    display: flex;
+    top: 5em;
+    left: 0;
+    right: 0;
+    justify-content: center;
+}
+
+.status-message > div {
+    min-width: 30em;
+    padding: 0.75em 1em;
+    box-shadow: 0 0.05em 0.15em §border-color-dark;
+    cursor: default;
+}
+
+.status-message span {
+    margin-right: 1em;
+}
+
+
+.status-message.neutral > div {
+    background: §background-primary-color;
+}
+
+.status-message.error > div {
+    background: #feb53d;
+}
+
+.status-message.success > div {
+    background: #b7c656;
+}

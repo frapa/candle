@@ -7,12 +7,12 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
         this.enterCallbacks = (options && options.onEnter) ? [options.onEnter] : [];
     },
 
-    render: function () {
-        AbstractView.prototype.render.call(this, {
+    render: function (options) {
+        AbstractView.prototype.render.call(this, _.extend({
             templateObj: {
                 label: this.label
             }
-        });
+        }, options));
 
         this.initListenersAfterRender();
         return this;

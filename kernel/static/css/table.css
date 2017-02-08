@@ -12,16 +12,16 @@ table.table tr {
 
 
 table.table th {
-    /*background: §primary-color;
-    color: white;*/
+    background: §primary-color-similar;
+    color: §primary-text-color;
     text-align: left;
     font-variant: small-caps;
-    border-bottom: 0.15em solid §primary-color;
+    /*border-bottom: 0.15em solid §primary-color;*/
 }
 
 table.table th, 
 table.table td {
-    padding: 0.4em 0.75em;
+    padding: 0.75em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

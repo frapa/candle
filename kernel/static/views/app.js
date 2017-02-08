@@ -10,7 +10,7 @@ var Kernel_RootView = AbstractView.extend({
         global.mainView = this;
     },
 
-    open: function (view, startPage) {
+    openMain: function (view) {
         AbstractView.prototype.open.apply(this, [view, 'app']);
         return Backbone.history.start({pushState: true});
     },

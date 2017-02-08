@@ -12,12 +12,11 @@ import (
 )
 
 const (
-	ATTR    = 99
-	AND     = 100
-	OR      = 101
-	ASC     = 102
-	DESC    = 103
-	ISO8601 = "2006-01-02 15:04:05.000"
+	ATTR = 99
+	AND  = 100
+	OR   = 101
+	ASC  = 102
+	DESC = 103
 )
 
 // FILTER -----------------------------------------------------------
@@ -175,15 +174,22 @@ func (q *query) Filter(data ...interface{}) *query {
 		panic("Filter requires at least one argument.")
 	}
 
+	var newFilter filter
 	typeName := reflect.ValueOf(data[0]).Type().Name()
 	if typeName == "string" {
 		if len(data) < 3 {
 			panic("Filter requires <column>, <operator> and <value> as arguments.")
 		}
 
-		nq.filter = F(data[0].(string), data[1].(string), data[2].(string))
+		newFilter = F(data[0].(string), data[1].(string), data[2].(string))
 	} else if typeName == "filter" {
-		nq.filter = data[0].(filter)
+		newFilter = data[0].(filter)
+	}
+
+	if nq.filter.type_ == 0 {
+		nq.filter = newFilter
+	} else {
+		nq.filter = And(nq.filter, newFilter)
 	}
 
 	return nq
@@ -214,7 +220,13 @@ func (q *query) OrderBy(column string, direction_ ...int) *query {
 }
 
 func (q *query) To(attr string) *query {
-	link := GetLinkInfo(q.tableName, attr)
+	link, exists := GetLinkInfo(q.tableName, attr)
+
+	if !exists {
+		panic("Trying to fetch data from unexistant link '" + attr +
+			"' of class " + q.tableName)
+	}
+
 	targetClass := link.Target
 
 	nq := All(targetClass)
@@ -437,6 +449,23 @@ func (q *query) ApplyWritePermissions(u *User) *query {
 	return q.Include(u.To("Groups").Filter("Permissions", "!=", "r").To("Models").GetIds())
 }
 
+// Samebut with groups
+func (q *query) ApplyReadPermissionsGroup(g *Group) *query {
+	if g.Permissions == "w" {
+		return q.Filter("Id", "=", "unexistant")
+	}
+
+	return q.Include(g.To("Models").GetIds())
+}
+
+func (q *query) ApplyWritePermissionsGroup(g *Group) *query {
+	if g.Permissions == "r" {
+		return q.Filter("Id", "=", "unexistant")
+	}
+
+	return q.Include(g.To("Models").GetIds())
+}
+
 /* This is really magic. "Lasciate ogni speranza o voi che entrate"
  */
 func (q *query) retrieveData() error {
@@ -516,7 +545,7 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 			if type_ == "string" {
 				value = reflect.ValueOf(fmt.Sprintf("%s", iValue))
 			} else if type_ == "Time" {
-				time_, err := time.Parse(ISO8601,
+				time_, err := time.Parse(time.RFC3339,
 					fmt.Sprintf("%s", iValue))
 				if err != nil {
 					// It means the field is empty or nil - invalid or no date

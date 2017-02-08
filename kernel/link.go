@@ -46,8 +46,9 @@ func DefineLink(origin AnyModel, attr string, target AnyModel, inverse_ ...strin
 	}
 }
 
-func GetLinkInfo(origin string, attr string) LinkInfo {
-	return linkTable[origin][attr]
+func GetLinkInfo(origin string, attr string) (LinkInfo, bool) {
+	linkInfo, ok := linkTable[origin][attr]
+	return linkInfo, ok
 }
 
 func ParentHasLink(modelName string, attr string) string {
@@ -81,7 +82,7 @@ func Link(origin AnyModel, attr string, target AnyModel, linkInverse bool) error
 		}
 	}
 
-	link := GetLinkInfo(infoOriginClass, attr)
+	link, _ := GetLinkInfo(infoOriginClass, attr)
 	// check the target type
 	if link.Target != targetClass {
 		// check the target type is not a parent model
@@ -144,7 +145,7 @@ func Unlink(origin AnyModel, attr string, target AnyModel, unlinkInverse bool) e
 		panic(originClass + " has no link '" + attr + "'")
 	}
 
-	link := GetLinkInfo(originClass, attr)
+	link, _ := GetLinkInfo(originClass, attr)
 	// check the target type
 	if link.Target != targetClass {
 		panic("Trying to create link: \n\t" +

@@ -9,9 +9,16 @@ then
     rm -R ${BUILD}/static
 fi
 
-
 # First build go executable
-go build ${APP_MODULE}
+# if there is one argument than compile
+# deploy version without debugging symbols
+if [ -z "$1" ]
+then
+    go build ${APP_MODULE}
+elif [ -z "$2" ]
+then
+    go build -ldflags "-s" ${APP_MODULE}
+fi
 
 # Then copy the static folder
 if [ ! -d ${BUILD}/static ]

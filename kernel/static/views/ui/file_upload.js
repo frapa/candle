@@ -2,6 +2,7 @@ var Kernel_View_Ui_FileUpload = AbstractView.extend({
     initialize: function (options) {
         this.name = options.name;
         this.filetypes = options.filetypes;
+        this.exts = options.exts;
         this.maxsize = options.maxsize;
         this.multiple = options.multiple;
         this.invalidCallback = options.invalidCallback;
@@ -66,8 +67,17 @@ var Kernel_View_Ui_FileUpload = AbstractView.extend({
                         _this.invalidCallback.call('size', size, this.maxsize);
                     }
                 } else if (_this.filetypes.indexOf(type) == -1) {
+                    // first check if mime is empty, in case resort to extensions
+                    if (type === '') {
+                        var ext = _.last(name.split('.'));
+                        if (_this.exts.indexOf(ext) !== -1) {
+                            // It's ok, the file extension match
+                            return;
+                        } 
+                    }
+
                     $file.removeClass('valid').addClass('invalid');
-                    $file.find('.file-error').html('Invalid file type: must be on of ' +
+                    $file.find('.file-error').html('Invalid file type: must be one of ' +
                         _this.filetypes.join(', '));
                     _this.error = true;
 

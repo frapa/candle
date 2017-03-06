@@ -16,6 +16,7 @@ table.table th {
     color: §primary-text-color;
     text-align: left;
     font-variant: small-caps;
+    cursor: pointer;
     /*border-bottom: 0.15em solid §primary-color;*/
 }
 

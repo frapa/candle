@@ -277,29 +277,36 @@ func (q *query) computeQuery() (string, []interface{}) {
 		subSql, subArgs := subQ.computeQuery()
 		tempTableName := "tab_" + xid.New().String()
 
-		// I suddenly realize I need to support link defined in parent
+		// [update 1] I suddenly realize I need to support link defined in parent
 		// classes. For this reason the OriginClass and TargetClass will be replaced
 		// by the proper classes and not assumed to simply be the q.tableName and
 		// subQ.tableName
-		originClass := subQ.tableName
+
+		// [update 2] Moreover origin class could be the name of a base class,
+		// for instance when selecting all models of a class we want to select
+		// also submodels of a derived class. Therefore, instead of using
+		// origin class as below (commented block) I match in the query the
+		// element class with the _Links.OriginClass
+
+		/*originClass := subQ.tableName
 		if _, ok := linkTable[originClass][q.subAttr]; !ok {
 			// there is no link in the current class, maybe it's in
 			// a parent one
 			if originClass = ParentHasLink(originClass, q.subAttr); originClass == "" {
 				panic("This should not happen: link not found while generating sql")
 			}
-		}
-		/*linkInfo := GetLinkInfo(originClass, q.subAttr)
-		targetClass := linkInfo.Target*/
+		}*/
+		//linkInfo, _ := GetLinkInfo(originClass, q.subAttr)
+		//targetClass := linkInfo.Target
 
 		// remove trailing ; in subSql
 		subSql = subSql[:len(subSql)-1]
 
 		sql = "SELECT \"" + q.tableName + "\".* FROM (" + subSql + ") AS " + tempTableName +
-			" INNER JOIN _Links ON _Links.OriginId=" + tempTableName + ".Id " +
-			"AND _Links.OriginClass='" + originClass +
+			" INNER JOIN _Links ON _Links.OriginId=\"" + tempTableName + "\".Id " +
+			"AND _Links.OriginClass=" + tempTableName + ".Class" + // see update 2 above
 			//"' AND _Links.TargetClass='" + targetClass +
-			"' AND _Links.Attr='" + q.subAttr +
+			" AND _Links.Attr='" + q.subAttr +
 			"' INNER JOIN \"" + q.tableName + "\" ON _Links.TargetId=\"" + q.tableName + "\".Id" +
 			filters + orderLimitOffset + ";"
 		args = append(subArgs, args...)
@@ -318,8 +325,8 @@ func (q *query) computeQuery() (string, []interface{}) {
 		targetClass := linkInfo.Target*/
 
 		sql = "SELECT \"" + q.tableName + "\".* FROM _Links INNER JOIN \"" + q.tableName +
-			"\" ON _Links.OriginClass='" + originClass +
-			"' AND _Links.OriginId='" + subQ.subId + "'.Id " +
+			"\" ON _Links.OriginClass=\"" + q.tableName + ".Id" + // see update 2 above
+			" AND _Links.OriginId='" + subQ.subId + "'.Id " +
 			//" AND _Links.TargetClass='" + targetClass +
 			" AND _Links.TargetId=\"" + q.tableName + "\".Id " +
 			" AND _Links.Attr='" + q.subAttr + "'"
@@ -442,20 +449,56 @@ func (q *query) Include(ids []string) *query {
 // Takes a query and filters the objects which
 // are accessible by the user
 func (q *query) ApplyReadPermissions(u *User) *query {
-	return q.Include(u.To("Groups").Filter("Permissions", "!=", "w").To("Models").GetIds())
+	var group Group
+	var filters []filter
+
+	groups := u.To("Groups")
+	for groups.Next() {
+		groups.Get(&group)
+
+		if group.Permissions == "w" {
+			continue
+		}
+
+		filters = append(filters, F("GroupsCache", "LIKE", "%"+group.GetId()+"%"))
+	}
+
+	if len(filters) != 0 {
+		return q.Filter(Or(filters...))
+	}
+
+	return q
 }
 
 func (q *query) ApplyWritePermissions(u *User) *query {
-	return q.Include(u.To("Groups").Filter("Permissions", "!=", "r").To("Models").GetIds())
+	var group Group
+	var filters []filter
+
+	groups := u.To("Groups")
+	for groups.Next() {
+		groups.Get(&group)
+
+		if group.Permissions == "r" {
+			continue
+		}
+
+		filters = append(filters, F("GroupsCache", "LIKE", "%"+group.GetId()+"%"))
+	}
+
+	if len(filters) != 0 {
+		return q.Filter(Or(filters...))
+	}
+
+	return q
 }
 
-// Samebut with groups
+// Same but with groups
 func (q *query) ApplyReadPermissionsGroup(g *Group) *query {
 	if g.Permissions == "w" {
 		return q.Filter("Id", "=", "unexistant")
 	}
 
-	return q.Include(g.To("Models").GetIds())
+	return q.Filter("GroupsCache", "LIKE", "%"+g.GetId()+"%")
 }
 
 func (q *query) ApplyWritePermissionsGroup(g *Group) *query {
@@ -463,7 +506,7 @@ func (q *query) ApplyWritePermissionsGroup(g *Group) *query {
 		return q.Filter("Id", "=", "unexistant")
 	}
 
-	return q.Include(g.To("Models").GetIds())
+	return q.Filter("GroupsCache", "LIKE", "%"+g.GetId()+"%")
 }
 
 /* This is really magic. "Lasciate ogni speranza o voi che entrate"

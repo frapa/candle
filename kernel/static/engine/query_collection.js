@@ -1,23 +1,7 @@
-var QueryCollection = Backbone.Collection.extend({
+var QueryCollection = UniqueCollection.extend({
     initialize: function (options) {
-        if (options && options.url) {
-            this.url = options.url;
-        }
-
-        if (options && options.query) {
-            this.url += '?' + options.query;
-        }
-
         this.fetched = false;
         this.started = false;
-
-        this.queryParams = {};
-    },
-
-    params: function (params) {
-        var clonedCollection = this.clone();
-        clonedCollection.queryParams = _.extend(clonedCollection.queryParams, params)
-        return clonedCollection;
     },
 
     /* This is a performance enhancement. If the collection

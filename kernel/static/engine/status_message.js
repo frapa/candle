@@ -2,6 +2,8 @@ function StatusMessage(options) {
     this.message = options.message;
     this.type = options.type === undefined ? 'neutral': options.type;
     this.clickCallback = options.click;
+    this.disappearCallback = options.disappear;
+    this.endCallback = options.end;
 }
 
 StatusMessage.prototype.show = function (timeout) {
@@ -21,11 +23,12 @@ StatusMessage.prototype.show = function (timeout) {
 
     var _this = this;
     $msgDiv.click(function (event) {
-        _this.destroy();
-
         if (_this.clickCallback) {
             _this.clickCallback(event);
         }
+
+        _this.endCallback = undefined;
+        _this.destroy();
     });
     setTimeout(this.destroy.bind(this), timeout);
 
@@ -34,4 +37,12 @@ StatusMessage.prototype.show = function (timeout) {
 
 StatusMessage.prototype.destroy = function () {
     this.$message.remove();
+
+    if (this.disappearCallback) {
+        this.disappearCallback();
+    }
+
+    if (this.endCallback) {
+        this.endCallback();
+    }
 };

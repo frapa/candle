@@ -1,4 +1,4 @@
-var Relational_Model = Backbone.Model.extend({
+var Relational_Model = UniqueModel.extend({
     initialize: function () {
         this.toCache = {};
         this.linkedModelsCache = {};
@@ -159,5 +159,5 @@ var Relational_Model = Backbone.Model.extend({
         // Model is saved. The cached links are not relevant anymore,
         // because a fetch would get them from the server. Delete the cache.
         this.linkedModelsCache = {};
-    }
+    },
 });

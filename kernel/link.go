@@ -47,8 +47,23 @@ func DefineLink(origin AnyModel, attr string, target AnyModel, inverse_ ...strin
 }
 
 func GetLinkInfo(origin string, attr string) (LinkInfo, bool) {
-	linkInfo, ok := linkTable[origin][attr]
-	return linkInfo, ok
+	var linkInfo LinkInfo
+	isOk := false
+
+	// The link info must be searched not only for the
+	// origin class but also for zzhe parent classes
+	tabs := GetTablesFromModelClass(origin)
+	for _, tab := range tabs {
+		var ok bool
+		linkInfo, ok = linkTable[tab.name][attr]
+
+		if ok {
+			isOk = true
+			break
+		}
+	}
+
+	return linkInfo, isOk
 }
 
 func ParentHasLink(modelName string, attr string) string {

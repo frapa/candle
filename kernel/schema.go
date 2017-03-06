@@ -366,9 +366,9 @@ func createTableFromModel(model AnyModel) []*table {
 }
 
 func ModelHasParent(modelName string, parentName string) bool {
-	hineritanceChain := schema.Tables[modelName]
+	inheritanceChain := schema.Tables[modelName]
 
-	for _, parent := range hineritanceChain {
+	for _, parent := range inheritanceChain {
 		if parent.name == parentName {
 			return true
 		}

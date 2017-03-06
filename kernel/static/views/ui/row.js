@@ -26,7 +26,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 computed: false,
                 linkedCollection: col.linkedCollection,
                 linkedCollectionInst: col.linkedCollectionInst,
-                onSave: col.onSave
+                onSave: col.onSave,
             };
 
             if (col.attr !== undefined && col.link === undefined) {

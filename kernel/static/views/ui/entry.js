@@ -5,11 +5,15 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
         this.label = (options && options.label) ?
             options.label : '';
         this.enterCallbacks = (options && options.onEnter) ? [options.onEnter] : [];
+        this.isPasswordField = options && options.password;
+        this.isAutoFocus = options && options.autoFocus;
     },
 
     render: function (options) {
         AbstractView.prototype.render.call(this, _.extend({
             templateObj: {
+				fieldType: this.isPasswordField ? "password" : "text",
+				autoFocus: this.isAutoFocus ? "autofocus" : "",
                 label: this.label
             }
         }, options));

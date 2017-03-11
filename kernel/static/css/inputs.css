@@ -26,18 +26,21 @@ input {
 }
 
 /* Normal */
-input[type="text"] {
+input[type="text"],
+input[type="password"] {
     font-size: 100%;
     border: 0;
     padding: 0.25em 0.5em;
     background: transparent;
 }
 
-.widget-helper input[type="text"] {
+.widget-helper input[type="text"],
+.widget-helper input[type="password"] {
     width: 100%;
 }
 
-input[type="text"] ~ label {
+input[type="text"] ~ label,
+input[type="password"] ~ label {
     font-size: 100%;
     color: §secondary-text-color;
     padding: 0.25em 0.5em;
@@ -48,7 +51,8 @@ input[type="text"] ~ label {
     z-index: -10;
 }
 
-input[type="text"] ~ .input-bar::after {
+input[type="text"] ~ .input-bar::after,
+input[type="password"] ~ .input-bar::after {
     transition: 0.2s ease all;
     position: absolute;
     left: 50%;
@@ -60,14 +64,17 @@ input[type="text"] ~ .input-bar::after {
 
 /* Focused */
 input[type="text"]:focus ~ label,
-input[type="text"]:valid ~ label {
+input[type="text"]:valid ~ label,
+input[type="password"]:focus ~ label,
+input[type="password"]:valid ~ label {
     transition: 0.2s ease all;
     font-size: 80%;
     color: §primary-color-similar;
     top: -1.5em;
 }
 
-input[type="text"]:focus ~ .input-bar::after {
+input[type="text"]:focus ~ .input-bar::after,
+input[type="password"]:focus ~ .input-bar::after {
     transition: 0.2s ease all;
     position: absolute;
     left: 0;
@@ -77,7 +84,8 @@ input[type="text"]:focus ~ .input-bar::after {
     border-bottom: 2px solid §primary-color;
 }
 
-input[type="text"]:invalid {
+input[type="text"]:invalid,
+input[type="password"]:invalid {
     box-shadow: none;
 }
 

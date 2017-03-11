@@ -1,0 +1,39 @@
+#login-screen-background {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	left: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: §primary-color;
+    z-index: 1000;
+}
+
+#log-in-button{
+	float: right;
+	display: block;
+}
+
+.login-dialog {
+    background: §background-primary-color;
+    padding: 1.5em;
+    box-shadow: 0 0 2px §border-color;
+}
+
+.login-dialog input[type="text"] ~ label,
+.login-dialog input[type="password"] ~ label {
+	z-index: 1010;
+}
+
+.login-dialog input[type="text"],
+.login-dialog input[type="password"] {
+	z-index: 1020;
+}
+
+#change-user-text{
+	color: §primary-color;
+	font-size: 70%;
+	text-align: center;
+}

@@ -2,12 +2,14 @@ var Kernel_View_LogIn = AbstractView.extend({
     initialize: function () {
         this.subviews = {
             username: new Kernel_View_Ui_Entry({
-                label: 'username',
-                onEnter: this.login.bind(this)
+                label: 'Username',
+                onEnter: this.login.bind(this),
+                autoFocus: true,
             }),
             password: new Kernel_View_Ui_Entry({
-                label: 'password',
-                onEnter: this.login.bind(this)
+                label: 'Password',
+                password: true,
+                onEnter: this.login.bind(this),
             })
         };
     },

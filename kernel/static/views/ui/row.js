@@ -9,6 +9,20 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         this.columns = options.columns;
 
         this.buildCellData();
+
+        this.listenToOnce(this, 'render', this.watchForChanges.bind(this));
+    },
+
+    watchForChanges: function () {
+        var _this = this;
+
+        if (!this.alreadyWatching) {
+            this.alreadyWatching = true;
+
+            this.listenTo(this.model, 'change', function () {
+                this.rerender();
+            });
+        }
     },
 
     buildCellData: function () {
@@ -130,7 +144,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             $div.addClass('selected');
         }
 
-        $cell.css('position', 'relative');
+        //$cell.css('position', 'relative');
         $cell.append($div);
     },
 
@@ -164,8 +178,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                     }
                 }
 
-                var colNum = _this.columnData.length;
-                $cell.css('width', (100.0 / colNum) + '%');
+                /*var colNum = _this.columnData.length;
+                $cell.css('width', (100.0 / colNum) + '%');*/
                 return $cell;
             });
 
@@ -195,6 +209,22 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         }
 
         return this;
+    },
+
+    // Custom rerender because it doesn't have a parent.
+    rerender: function () {
+        return
+        var _this = this;
+        var $oldDom = this.$el;
+
+        var onRowRerendered = new AsyncNotificationManager(function () {
+            $oldDom.replaceWith(_this.$el);
+        });
+
+        this.render({
+            inlineEditing: false,
+            anmgr: onRowRerendered
+        });
     },
 
     inlineEditingListeners: function () {

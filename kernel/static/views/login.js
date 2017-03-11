@@ -19,7 +19,6 @@ var Kernel_View_LogIn = AbstractView.extend({
     render: function (options) {
         if (localStorage['username'] === undefined) {
             AbstractView.prototype.render.call(this, options);
-        } else {
         }
     },
 	

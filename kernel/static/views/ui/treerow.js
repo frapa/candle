@@ -12,6 +12,8 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
 
         this.createSubRows(options);
         Kernel_View_Ui_Row.prototype.initialize.call(this, options);
+
+        this.listenToOnce(this, 'render', this.initListenersAfterRender.bind(this));
     },
 
     updateCount: function () {
@@ -154,7 +156,7 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
 
         $div.append($actions);
 
-        $cell.css('position', 'relative');
+        //$cell.css('position', 'relative');
         $cell.append($div);
     },
 
@@ -175,8 +177,8 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
             }
 
             var $cell = $(_this.cellTemplate(cell));
-            var colNum = _this.columnData.length;
-            $cell.css('width', (100.0 / colNum) + '%');
+            /*var colNum = _this.columnData.length;
+            $cell.css('width', (100.0 / colNum) + '%');*/
 
             if (i == 0) {
                 _this.addUnfoldingIndicator($cell, level);
@@ -210,7 +212,7 @@ var Kernel_View_Ui_Treerow = Kernel_View_Ui_Row.extend({
             this.$subRow = $([]);
         }
 
-        this.initListenersAfterRender();
+        this.trigger('render');
         return this;
     },
 

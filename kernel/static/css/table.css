@@ -28,7 +28,7 @@ table.table td {
     text-overflow: ellipsis;
 }
 
-table.table td {
+table.table tr {
     border-bottom: 1px solid §border-color-light;
 }
 

@@ -73,6 +73,10 @@ var AbstractView = Backbone.View.extend({
         }
         this.subviews[name] = view;
     },
+    
+    getView: function (name) {
+        return this.subviews[name];
+    },
 
     open: function (view, subview) {
         if (this.subviews === undefined) {

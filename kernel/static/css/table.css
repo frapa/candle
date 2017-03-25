@@ -245,3 +245,23 @@ div.table-filters {
     padding: 1.5em;
     flex-grow: 1;
 }
+
+.table-filters fieldset {
+    margin: 1.5em 0 1em 0;
+}
+
+.table-filters .global-search-container {
+    padding: 0 1.5em;
+}
+
+.table-filter-options-line {
+    display: flex;
+}
+
+.table-filter-options-line span:not(:last-child) {
+    margin-right: 1em;
+}
+
+.table-filter-options-line .type {
+    flex-grow: 1;
+}

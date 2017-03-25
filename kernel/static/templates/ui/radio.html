@@ -1,5 +1,13 @@
-<span class="ratio">
-    <% _.each(options, function () {
-        print('<input type="radio" value="ssdf" />')
+<span class="radio">
+    <% _.each(options, function (option) {
+        print(
+            '<label>' +
+                '<input type="radio" name="' + uid +
+                    '" value="' + (option.value ? option.value : option.label) + '" ' +
+                    (option.checked ? 'checked' : '') + '/>' +
+                '<span class="label">' +
+                    '<span class="' + option.icon + '"></span>' +
+                    (option.label ? option.label : '') + '</span>' +
+            '</label>');
     }); %>
 </span>

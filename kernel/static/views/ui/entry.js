@@ -5,6 +5,8 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
         this.label = (options && options.label) ?
             options.label : '';
         this.enterCallbacks = (options && options.onEnter) ? [options.onEnter] : [];
+        this.blurCallbacks = (options && options.onBlur) ? [options.onBlur] : [];
+        this.stopTypingCallbacks = (options && options.onStopTyping) ? [options.onStopTyping] : [];
         this.isPasswordField = options && options.password;
         this.isAutoFocus = options && options.autoFocus;
     },
@@ -28,7 +30,7 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
             _this.trigger('change', event.target.value, event);
         };
 
-        var callEnterCallback =  function (event) {
+        var callEnterCallbacks =  function (event) {
             if (event.keyCode == 13) {
                 _.each(_this.enterCallbacks, function (callback) {
                     callback(_this.getValue());
@@ -36,9 +38,23 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
             }
         };
 
+        var callBlurCallbacks =  function (event) {
+            _.each(_this.blurCallbacks, function (callback) {
+                callback(_this.getValue());
+            });
+        };
+
+        var callStopTypingCallbacks =  function (event) {
+            _.each(_this.stopTypingCallbacks, function (callback) {
+                callback(_this.getValue());
+            });
+        };
+
         this.$('input')
             .on('change', triggerChange)
-            .on('keyup', callEnterCallback);
+            .on('keyup', callEnterCallbacks)
+            .on('blur', callBlurCallbacks)
+            .on('keyup', _.debounce(callStopTypingCallbacks, 500));
     },
     
     setValue: function (value) {
@@ -51,6 +67,10 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
 
     onEnter: function (callback) {
         this.enterCallbacks.push(callback);
+    },
+
+    onBlur: function (callback) {
+        this.blurCallbacks.push(callback);
     },
 
     focus: function () {

@@ -1,9 +1,6 @@
 var Kernel_View_Ui_FieldFilter = AbstractView.extend({
     initialize: function (options) {
-        this.addView('input', new Kernel_View_Ui_Entry({
-            label: options.label,
-            onEnter: options.onEnter,
-        }));
+        this.addView('input', new Kernel_View_Ui_Entry(options));
         
         this.addView('type', new Kernel_View_Ui_Radio({
             options: [{
@@ -25,11 +22,13 @@ var Kernel_View_Ui_FieldFilter = AbstractView.extend({
         this.addView('match-case', new Kernel_View_Ui_Checkbox({
             label: 'aA',
             style: 'button',
+            onChange: options.onChangeOptions,
         }));
 
         this.addView('negate', new Kernel_View_Ui_Checkbox({
             label: '!',
             style: 'button',
+            onChange: options.onChangeOptions,
         }));
     },
 

@@ -2,6 +2,7 @@ var Kernel_View_Ui_Radio = AbstractView.extend({
     initialize: function (options) {
         this.options = options.options;
         this.uid = _.uniqueId('radio_');
+        this.changeCallback = options.onChange;
     },
 
     render: function (options) {
@@ -11,6 +12,14 @@ var Kernel_View_Ui_Radio = AbstractView.extend({
                 uid: this.uid,
             }
         }, options));
+
+        this.initListenersAfterRender();
+    },
+    
+    initListenersAfterRender: function () {
+        if (this.changeCallback) {
+            this.$('input').on('change', this.changeCallback);
+        }   
     },
 
     getValue: function () {

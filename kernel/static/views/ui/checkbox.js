@@ -3,6 +3,7 @@ var Kernel_View_Ui_Checkbox = AbstractView.extend({
         this.label = options.label;
         this.icon = options.icon;
         this.style = options.style ? options.style : 'default';
+        this.changeCallback = options.onChange;
     },
     
     render: function (options) {
@@ -13,6 +14,14 @@ var Kernel_View_Ui_Checkbox = AbstractView.extend({
                 style: this.style,
             }
         }, options));
+
+        this.initListenersAfterRender();
+    },
+
+    initListenersAfterRender: function () {
+        if (this.changeCallback) {
+            this.$('input').on('change', this.changeCallback);
+        }   
     },
 
     getValue: function () {

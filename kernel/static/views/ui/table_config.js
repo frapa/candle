@@ -52,6 +52,7 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
             this.searchEntry = new Kernel_View_Ui_Entry({
                 label: 'Search all',
                 onEnter: this.searchAll.bind(this),
+                onStopTyping: this.searchAll.bind(this),
             });
             this.searchEntry.render();
         }
@@ -144,7 +145,7 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
 
     addField: function (fieldModel) {
         this.columns.push({
-            attr: fieldModel.get('field')
+            attr: fieldModel.get('field'),
         });
 
         this.availableFields.remove(fieldModel);
@@ -186,6 +187,8 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
         var filterUi = new filterUiType({
             label: 'Filter "' + fieldModel.get('field') + '"',
             onEnter: this.applyFilters.bind(this),
+            onStopTyping: this.applyFilters.bind(this),
+            onChangeOptions: this.applyFilters.bind(this),
         });
         filterUi.attr = fieldModel.get('field');
         filterUi.render();

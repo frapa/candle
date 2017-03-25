@@ -6,6 +6,9 @@ var UniqueCollection = Backbone.Collection.extend({
     constructor: function (models, options) {
         if (options && options.url) {
             this.url = options.url;
+        } else {
+            Backbone.Collection.apply(this, arguments);
+            return;
         }
         this.queryParams = options && options.params ? options.params : {};
 

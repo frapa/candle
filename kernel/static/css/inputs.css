@@ -21,13 +21,14 @@ fieldset {
 }
 
 input {
-    font-family: 'Roboto';
+    font-family: 'Lato';
     color: black;
 }
 
 /* Normal */
 input[type="text"],
 input[type="password"] {
+    outline: none;
     font-size: 100%;
     border: 0;
     padding: 0.25em 0.5em;
@@ -91,12 +92,9 @@ input[type="password"]:invalid {
 
 /* Selectbox */
 .selectbox {
-    position: absolute;
-    top: 2.5em;
     width: 100%;
     overflow-x: hidden;
     overflow-y: scroll;
-    z-index: 10;
     visibility: hidden;
 }
 
@@ -119,11 +117,47 @@ input[type="password"]:invalid {
     display: none;
 }
 
+@media only screen and (min-width: 760px) {
+    .selectbox {
+        z-index: 10;
+        position: absolute;
+        top: 2.5em;
+    }
+}
+
+@media only screen and (max-width: 760px) {
+    .selectbox {
+        position: fixed;    
+        width: 80%;
+        height: 60%;
+        margin: auto;
+    }
+
+    .selectbox-list {
+        position: relative;
+        background: §background-primary-color;
+    }
+
+    .selectbox-item {
+    }
+}
+
 /* Focused */
 .selectbox-input:focus ~ .selectbox {
     background: §background-primary-color;
     box-shadow: 0 0.05em 0.25em §border-color;
     visibility: visible;
+}
+
+@media only screen and (max-width: 760px) {
+    .selectbox-input:focus ~ .selectbox {
+        display: fixed;
+        top: 2em;
+        bottom: 2em;
+        left: 3em;
+        right: 3em;
+        background: rgba(0, 0, 0, 0.4);
+    }
 }
 
 .selectbox-input:focus ~ .selectbox .selectbox-item {
@@ -150,15 +184,31 @@ input[type="password"]:invalid {
 .datepicker table {
     border-spacing: 0;
 }
-.datepicker th {
-    padding: 0.5em 1em;
-    padding-bottom: 1.5em;
+
+@media only screen and (min-width: 760px) {
+    .datepicker td {
+        padding: 0.5em 1em;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .datepicker th {
+        padding: 0.5em 1em;
+        padding-bottom: 1.5em;
+    }
 }
 
-.datepicker td {
-    padding: 0.5em 1em;
-    text-align: center;
-    cursor: pointer;
+@media only screen and (max-width: 760px) {
+    .datepicker td {
+        padding: 0.5em 0.8em;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .datepicker th {
+        padding: 0.5em 0.8em;
+        padding-bottom: 1.5em;
+    }
 }
 
 .datepicker td:hover,
@@ -168,7 +218,7 @@ input[type="password"]:invalid {
 }
 
 .datepicker td.other-month {
-    color: §secondary-text-color;
+    color: §tertiary-text-color;
 }
 
 .datepicker td.selected {
@@ -230,7 +280,7 @@ input[type="file"] {
 }
 
 .files .file-size {
-    color: §secondary-text-color;
+    color: §tertiary-text-color;
 }
 
 /* buttons */

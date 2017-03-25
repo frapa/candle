@@ -9,21 +9,27 @@ import (
 )
 
 type Schema struct {
-	Tables map[string][]*table
-	Types  map[string]reflect.Type
+	Tables       map[string][]*table
+	Types        map[string]reflect.Type
+	Constructors map[string]reflect.Value
 }
 
 var schema Schema
 
-func RegisterModel(model AnyModel) {
+func RegisterModel(constructor interface{}) {
 	if schema.Tables == nil {
 		schema.Tables = make(map[string][]*table)
 		schema.Types = make(map[string]reflect.Type)
+		schema.Constructors = make(map[string]reflect.Value)
 	}
+
+	constructorValue := reflect.ValueOf(constructor)
+	model := constructorValue.Call(nil)[0].Interface().(AnyModel)
 
 	name := GetModelName(model)
 	schema.Tables[name] = createTableFromModel(model)
 	schema.Types[name] = reflect.ValueOf(model).Type()
+	schema.Constructors[name] = constructorValue
 }
 
 func GetTablesFromModelClass(class string) []*table {
@@ -40,8 +46,8 @@ func NewInstanceOf(modelName string) AnyModel {
 		panic("Model '" + modelName + "' does not exist")
 	}
 
-	type_ := schema.Types[modelName]
-	return reflect.New(type_).Interface().(AnyModel)
+	constructor := schema.Constructors[modelName]
+	return constructor.Call(nil)[0].Interface().(AnyModel)
 }
 
 // SCHEMA BUILDING -------------------------------------------

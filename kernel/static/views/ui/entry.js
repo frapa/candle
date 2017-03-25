@@ -31,7 +31,7 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
         var callEnterCallback =  function (event) {
             if (event.keyCode == 13) {
                 _.each(_this.enterCallbacks, function (callback) {
-                    callback();
+                    callback(_this.getValue());
                 });
             }
         };
@@ -51,5 +51,9 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
 
     onEnter: function (callback) {
         this.enterCallbacks.push(callback);
+    },
+
+    focus: function () {
+        this.$('input').focus();
     }
 });

@@ -1,7 +1,31 @@
-var Relational_Model = UniqueModel.extend({
+var RelationalModel = UniqueModel.extend({
     initialize: function () {
         this.toCache = {};
         this.linkedModelsCache = {};
+
+        this.checkTypes();
+    },
+
+    // If the model was created out of data, assign types
+    checkTypes: function () {
+        if (!this.types) {
+            this.types = {};
+
+            for (attr in this.attributes) {
+                var val = this.get(attr);
+                
+                var type = typeof val;
+                if (val === 'number') {
+                    if (Number.isInteger(val)) {
+                        val = 'int64';
+                    } else {
+                        val = 'float64';
+                    }
+                }
+
+                this.types[attr] = type;
+            }
+        }
     },
 
     createNewCollection: function (attr) {
@@ -154,7 +178,7 @@ var Relational_Model = UniqueModel.extend({
     },
 
     save: function (attributes, options) {
-        Backbone.Model.prototype.save.call(this, attributes, options);
+        UniqueModel.prototype.save.call(this, attributes, options);
         
         // Model is saved. The cached links are not relevant anymore,
         // because a fetch would get them from the server. Delete the cache.

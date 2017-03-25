@@ -39,7 +39,7 @@ func GenerateBackboneClasses() string {
 		jsModelName := packageName + "_Model_" + modelName
 		jsTypeMap := generateClassTypeMap(modelName)
 		jsModel := "var " + jsModelName +
-			" = Relational_Model.extend({urlRoot: '/api/" + modelName +
+			" = RelationalModel.extend({urlRoot: '/api/" + modelName +
 			"', idAttribute: 'Id', types:" + jsTypeMap + "});"
 
 		jsCollection := "var " + packageName + "_Collection_" + modelName +

@@ -1,13 +1,26 @@
 var QueryCollection = UniqueCollection.extend({
-    initialize: function (options) {
+    initialize: function (models) {
         this.fetched = false;
         this.started = false;
+
+        if (models && models.length && !(models[0] instanceof RelationalModel)) {
+            _.each(models, function (modelData, i) {
+                models[i] = new RelationalModel(modelData);
+            });
+        }
     },
 
     /* This is a performance enhancement. If the collection
      * has already been fetched, there is no need to fetch it again
      */
     fetch: function (options) {
+        // In candle it's possible to create anonymous collection
+        // for use in table. There have no url
+        if (!this.url) {
+            options.success(this, undefined, options)
+            return;
+        }
+
         var force = (options && options.force) ? true : false;
 
         if (this.fetched && !force) {
@@ -36,7 +49,7 @@ var QueryCollection = UniqueCollection.extend({
                 this.outerSuccess = new SuccessManager();
                 options.success = this.outerSuccess.call;
 
-                this.started = true; // to avoid multiple requests for no reason
+                this.started = true; // to avoid multiple concurrent requests for no reason
                 Backbone.Collection.prototype.fetch.call(this,
                     _.extend({data: $.param(_this.queryParams)}, options));
             }

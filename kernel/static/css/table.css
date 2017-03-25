@@ -15,14 +15,15 @@ table.table th {
     background: §primary-color-similar;
     color: §primary-text-color;
     text-align: left;
-    font-variant: small-caps;
+    /*font-variant: small-caps;*/
     cursor: pointer;
     /*border-bottom: 0.15em solid §primary-color;*/
 }
 
 table.table th, 
 table.table td {
-    padding: 0.75em;
+    padding: 0.5em;
+    flex-basis: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -34,10 +35,6 @@ table.table tr {
 
 table.table td.widget {
     overflow: visible;
-}
-
-table.table tr:not(.treeSubRow):hover td {
-    background: §background-secondary-color;
 }
 
 .unfold-indicator {
@@ -57,43 +54,194 @@ tr.treeSubRow > td {
     border: 0;
 }
 
-table.treeSubTable {
+section table.treeSubTable {
     border: 0;
 }
 
-div.table-actions {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    right: 1px;
-    top: 0;
-    bottom: 0;
-    padding-right: 0.5em;
+section table.treeSubTable tr:last-child {
+    border: 0;
 }
 
-span.table-action {
-    display: none;
+@media only screen and (min-width: 760px) {
+    table.table tr:not(.treeSubRow):hover td {
+        background: §background-tertiary-color;
+    }
+
+    div.table-actions {
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        right: 1px;
+        top: 0;
+        bottom: 0;
+        padding-right: 0.5em;
+    }
+
+    span.table-action {
+        display: none;
+        cursor: pointer;
+    }
+
+    tr:hover > td > div.table-actions > span.table-action,
+    div.table-actions.selected > span.table-action {
+        display: inline;
+    }
+
+    span.table-action:hover,
+    span.table-action.selected {
+        display: inline;
+        color: §primary-color;
+    }
+
+    div.adding-row-indicator {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        padding: 0.4em 0.75em;
+        color: §secondary-text-color;
+    }
+
+    span.inline-editing-title {
+        display: none;
+    }
+
+    table.table tr.inline-editing footer {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 760px) {
+    div.table-actions {
+        display: none;
+    }
+    
+    table.table tr.adding-row {
+        position: fixed;
+        z-index: 10;
+        visibility: hidden;
+    }
+
+    div.adding-row-indicator {
+        visibility: hidden;
+    }
+
+    div.adding-row-indicator::after {
+        visibility: visible;
+        display: block;
+        position: fixed;
+        right: 1em;
+        bottom: 1em;
+        padding: 0.6em;
+        background: §primary-color;
+        color: white;
+        text-align: center;
+        font-size: 200%;
+        content: '+';
+        z-index: 500;
+        box-shadow: 0 0.15em 0.5em §border-color-dark;
+        border-radius: 2em;
+        width: 1.2em;
+        height: 1.2em;
+    }
+    
+    table.table .inline-editing-conatiner {
+        background: rgba(0, 0, 0, 0.4);
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        content: " ";
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    } 
+    
+    table.table tr.inline-editing {
+        display: block;
+        padding: 1.5em;
+        width: 18em;
+        box-shadow: 0 0.5em 1em rgba(0, 0, 0, 0.4);
+    }
+    
+    table.table tr.inline-editing td {
+        display: block;
+        margin: 1em 0;
+    } 
+    
+    #transactions table.table tr.inline-editing td:nth-child(4) {
+        position: relative;
+        z-index: 30;
+    } 
+
+    table.table tr.inline-editing fieldset {
+        z-index: 20;
+    }
+
+    span.inline-editing-title {
+        display: block;
+        font-weight: 300;
+        margin-bottom: 1.5em;
+        font-size: 125%;
+    }
+
+    table.table tr.inline-editing footer {
+        margin-top: 2em;
+        text-align: right;
+    }
+}
+
+table.table th.filter-header {
+    display: flex;
+    flex-grow: 0;
+    flex-basis: auto;
+    justify-content: stretch;
+    padding: 0.3em;
+}
+
+table.table th.filter-header span {
+    padding: 0.2em;
+    border-radius: 0.1em;
+}
+
+table.table th.filter-header span:hover {
+    background: §primary-color;
+}
+
+div.config-table {
+    display: flex;
+    flex-grow: 1;
+}
+
+div.table-container {
+    flex-grow: 1;
+}
+
+div.table-filters {
+    display: flex;
+    flex-direction: column;
+    min-width: 20em;
+}
+
+.table-filters .toolbar {
+    border-top: 1px solid §border-color;
+    background: §border-color-light;
+}
+
+.table-filters .toolbar .button {
+    padding: 0.5em;
     cursor: pointer;
 }
 
-tr:hover > td > div.table-actions > span.table-action,
-div.table-actions.selected > span.table-action {
-    display: inline;
+.table-filters .toolbar .button:hover {
+    background: §border-color;
 }
 
-span.table-action:hover,
-span.table-action.selected {
-    display: inline;
-    color: §primary-color;
-}
-
-div.adding-row-indicator {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    padding: 0.4em 0.75em;
-    color: §secondary-text-color;
+.table-filters .filter-list {
+    padding: 1.5em;
+    flex-grow: 1;
 }

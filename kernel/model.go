@@ -31,7 +31,7 @@ type BaseModel struct {
 }
 
 func init() {
-	RegisterModel(BaseModel{})
+	RegisterModel(NewBaseModel)
 }
 
 // Constructor initilizes basic model
@@ -46,24 +46,24 @@ func NewBaseModel() *BaseModel {
 	return baseModel
 }
 
-func (bm BaseModel) GetId() string {
+func (bm *BaseModel) GetId() string {
 	return bm.Id
 }
 
-func (bm BaseModel) GetClass() string {
+func (bm *BaseModel) GetClass() string {
 	return bm.Class
 }
 
-func (bm BaseModel) IsPersisted() bool {
+func (bm *BaseModel) IsPersisted() bool {
 	return bm.Persisted
 }
 
-func (bm BaseModel) SetGroupsCache(cache string) {
+func (bm *BaseModel) SetGroupsCache(cache string) {
 	bm.GroupsCache = cache
-	Save(&bm)
+	Save(bm)
 }
 
-func (bm BaseModel) Link(attr string, target AnyModel) error {
+func (bm *BaseModel) Link(attr string, target AnyModel) error {
 	// If it's a group we need to update the cache
 	if attr == "Groups" && target.GetClass() == "Group" {
 		TargetCacheGroup(bm, target.GetId())
@@ -72,7 +72,7 @@ func (bm BaseModel) Link(attr string, target AnyModel) error {
 	return Link(bm, attr, target, true)
 }
 
-func (bm BaseModel) Unlink(attr string, target AnyModel) error {
+func (bm *BaseModel) Unlink(attr string, target AnyModel) error {
 	// If we are unlinking a group, remove the cache
 	if attr == "Groups" && target.GetClass() == "Group" {
 		TargetUncacheGroup(bm, target.GetId())
@@ -81,10 +81,10 @@ func (bm BaseModel) Unlink(attr string, target AnyModel) error {
 	return Unlink(bm, attr, target, true)
 }
 
-func (bm BaseModel) To(attr string) *query {
+func (bm *BaseModel) To(attr string) *query {
 	return All(bm.GetClass()).Filter("Id", "=", bm.GetId()).To(attr)
 }
 
-func (bm BaseModel) Delete() error {
-	return Delete(&bm)
+func (bm *BaseModel) Delete() error {
+	return Delete(bm)
 }

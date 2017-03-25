@@ -6,11 +6,13 @@
 §primary-color: #0096d3;
 §primary-color-similar: #01528a;
 §secondary-color: #e5f4f9;
-§background-primary-color: white;
+§background-primary-color: #f8f8f8;
 §background-secondary-color: #eaeaea;
+§background-tertiary-color: #f0f0f0;
 
-§primary-text-color: white;
-§secondary-text-color: #999999;
+§primary-text-color: #ebebeb;
+§secondary-text-color: #555555;
+§tertiary-text-color: #999999;
 
 §border-color: #cdcdcd;
 §border-color-light: #e6e6e6;
@@ -49,4 +51,8 @@ h3 {
     font-size: 100%;
     margin: 0;
     font-variant: small-caps;
+}
+
+.hidden {
+    display: none !important;
 }

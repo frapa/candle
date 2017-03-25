@@ -8,7 +8,7 @@ import (
 )
 
 type User struct {
-	BaseModel
+	*BaseModel
 	Email    string
 	UserName string
 	Salt     string
@@ -17,33 +17,34 @@ type User struct {
 }
 
 func init() {
-	RegisterModel(User{})
+	RegisterModel(NewUser)
 }
 
-func NewUser(name string, psw string) *User {
+func NewUser() *User {
 	u := new(User)
-	u.BaseModel = *NewBaseModel()
-	u.UserName = name
-
-	u.Salt = RandStringFixedLength(saltLen)
-	u.PswHash = pswToHash(psw, u.Salt)
+	u.BaseModel = NewBaseModel()
 
 	return u
 }
 
-func (u *User) CanCreate(model string) (bool, Group) {
+func (u *User) SetPassword(psw string) {
+	u.Salt = RandStringFixedLength(saltLen)
+	u.PswHash = pswToHash(psw, u.Salt)
+}
+
+func (u *User) CanCreate(model string) (bool, *Group) {
 	groups := u.To("Groups")
 
-	var group Group
+	group := NewGroup()
 	for groups.Next() {
-		groups.Get(&group)
+		groups.Get(group)
 
 		if group.CanCreate(model) {
 			return true, group
 		}
 	}
 
-	return false, Group{}
+	return false, &Group{}
 }
 
 // generate Hash from password string
@@ -68,8 +69,8 @@ func CheckUserPassword(name string, psw string) error {
 		}
 	}
 
-	var u User
-	user.Get(&u)
+	u := NewUser()
+	user.Get(u)
 
 	if pswToHash(psw, u.Salt) == u.PswHash {
 		return nil

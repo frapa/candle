@@ -126,8 +126,8 @@ type query struct {
  * stands for "get all objects of type_ modelName".
  * Example use:
  *
- * var u User
- * All("User").Filter("username", "=", username).Get(&u)
+ * u := NewUser()
+ * All("User").Filter("username", "=", username).Get(u)
  * if u.PswHash === password { ...
  *
  * As you see you are getting all user and then filter
@@ -449,12 +449,12 @@ func (q *query) Include(ids []string) *query {
 // Takes a query and filters the objects which
 // are accessible by the user
 func (q *query) ApplyReadPermissions(u *User) *query {
-	var group Group
+	group := NewGroup()
 	var filters []filter
 
 	groups := u.To("Groups")
 	for groups.Next() {
-		groups.Get(&group)
+		groups.Get(group)
 
 		if group.Permissions == "w" {
 			continue
@@ -464,19 +464,20 @@ func (q *query) ApplyReadPermissions(u *User) *query {
 	}
 
 	if len(filters) != 0 {
-		return q.Filter(Or(filters...))
+		nq := q.Filter(Or(filters...))
+		return nq
 	}
 
-	return q
+	return q.Filter("Id", "=", "unexistant")
 }
 
 func (q *query) ApplyWritePermissions(u *User) *query {
-	var group Group
+	group := NewGroup()
 	var filters []filter
 
 	groups := u.To("Groups")
 	for groups.Next() {
-		groups.Get(&group)
+		groups.Get(group)
 
 		if group.Permissions == "r" {
 			continue
@@ -489,7 +490,7 @@ func (q *query) ApplyWritePermissions(u *User) *query {
 		return q.Filter(Or(filters...))
 	}
 
-	return q
+	return q.Filter("Id", "=", "unexistant")
 }
 
 // Same but with groups
@@ -564,7 +565,7 @@ func setStructFields(str interface{}, row map[string]interface{}) {
 	for i := 0; i < elemType.NumField(); i++ {
 		field := elemType.Field(i)
 		if field.Anonymous {
-			setStructFields(elem.Field(i).Addr().Interface(), row)
+			setStructFields(elem.Field(i).Interface(), row)
 			continue
 		}
 

@@ -6,25 +6,24 @@ import (
 )
 
 type Group struct {
-	BaseModel
+	*BaseModel
 	Name              string
 	Permissions       string // "r", "w", "rw"
 	CreatePermissions string
 }
 
 func init() {
-	DefineLink(Group{}, "Users", User{}, "Groups")
-	DefineLink(Group{}, "Models", BaseModel{}, "Groups")
+	DefineLink(NewGroup(), "Users", NewUser(), "Groups")
+	DefineLink(NewGroup(), "Models", NewBaseModel(), "Groups")
 
-	RegisterModel(Group{})
+	RegisterModel(NewGroup)
 }
 
-func NewGroup(name string) *Group {
+func NewGroup() *Group {
 	g := new(Group)
 
-	g.BaseModel = *NewBaseModel()
+	g.BaseModel = NewBaseModel()
 
-	g.Name = name
 	g.Permissions = "r" // default to only reading
 
 	return g
@@ -35,8 +34,6 @@ func TargetCacheGroup(target AnyModel, Id string) {
 	typeName := reflect.ValueOf(target).Type().Name()
 	if typeName == "" {
 		cache = target.(*BaseModel).GroupsCache
-	} else {
-		cache = target.(BaseModel).GroupsCache
 	}
 
 	currentGroups := strings.Split(cache, ",")
@@ -65,8 +62,6 @@ func TargetUncacheGroup(target AnyModel, Id string) {
 	typeName := reflect.ValueOf(target).Type().Name()
 	if typeName == "" {
 		cache = target.(*BaseModel).GroupsCache
-	} else {
-		cache = target.(BaseModel).GroupsCache
 	}
 
 	currentGroups := strings.Split(cache, ",")
@@ -110,7 +105,7 @@ func (g *Group) CanCreate(model string) bool {
  * groups to objects. This is necessary to implement
  * caching and fast permission filtering.
  */
-func (g Group) Link(attr string, target AnyModel) error {
+func (g *Group) Link(attr string, target AnyModel) error {
 	if attr == "Models" {
 		g.TargetCacheGroup(target)
 	}
@@ -119,7 +114,7 @@ func (g Group) Link(attr string, target AnyModel) error {
 }
 
 // On Unlink we need to remove the cache
-func (g Group) Unlink(attr string, target AnyModel) error {
+func (g *Group) Unlink(attr string, target AnyModel) error {
 	if attr == "Models" {
 		g.TargetUncacheGroup(target)
 	}

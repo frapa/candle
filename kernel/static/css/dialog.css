@@ -1,23 +1,56 @@
-.overlay {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 5;
+@media only screen and (min-width: 760px) {
+    .overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 5;
+    }
+}
+
+@media only screen and (max-width: 760px) {
+    .overlay {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5000;
+    }
 }
 
 .dialog {
     position: absolute;
     background: §background-primary-color;
-    padding: 1.5em;
-    padding-bottom: 1em;
     box-shadow: 0 0.05em 0.25em §border-color-dark;
     z-index: 10;
 }
 
+.dialog:not(.dialog-list) {
+    padding: 1.5em;
+    padding-bottom: 1em;
+}
+
+@media only screen and (max-width: 760px) {
+    .dialog {
+        top: auto !important;
+        left: auto !important;
+    }
+}
+
 .dialog-triangle-container {
     position: absolute;
+}
+
+@media only screen and (max-width: 760px) {
+    .dialog-triangle-container {
+        display: none;
+    } 
 }
 
 .dialog-triangle {
@@ -85,7 +118,7 @@ div.dialog-triangle-container-center {
 }
 
 .dialog-triangle-container-center .dialog-triangle-border {
-    left: -1.2em;
+    left: -1.15em;
 }
 
 /* --- */
@@ -101,17 +134,22 @@ div.dialog-triangle-container-east {
     left: -2.2em;
 }
 
-.dialog header {
+.dialog header:not(.dialog-list) {
     font-weight: 300;
     margin-bottom: 1.25em;
     font-size: 120%;
+}
+
+.dialog-list header,
+.dialog-list footer {
+    display: none;
 }
 
 .datepicker.dialog > header {
     display: none;
 }
 
-.dialog footer {
+.dialog:not(.dialog-list) footer {
     margin-top: 1.25em;
     display: flex;
     justify-content: flex-end;
@@ -123,4 +161,10 @@ div.dialog-triangle-container-east {
 
 .dialog footer button:last-child {
     margin-right: 0;
+}
+
+.dialog-list table.table {
+    width: auto;
+    min-width: 10em;
+    border: 0;
 }

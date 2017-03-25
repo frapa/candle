@@ -1,12 +1,16 @@
 var Kernel_View_Ui_Table = AbstractView.extend({
     initialize: function (options) {
+        this.columns = options.columns;
+        
+        this.click = options.click;
         this.actions = options.actions;
         this.inlineEditing = options.inlineEditing;
         this.hasAddingRow = options.addingRow;
         this.beforeSave = options.beforeSave;
         this.modelToRow = {};
         this.order = options.order ? options.order.split(' ') : undefined;
-        this.columns = options.columns;
+        
+        this.hideHeader = (options && options.hideHeader) ? true : false;
         
         // transform tooltips into tooltip ui components
         this.actions = _.map(options.actions, function (action) {
@@ -14,12 +18,9 @@ var Kernel_View_Ui_Table = AbstractView.extend({
             return action;
         });
 
-        this.renderData = {
-            width: (100.0 / options.columns.length),
-            columns: options.columns,
-            headerTemplate: _.template('<th style="width: ' +
-                '<%= width %>%;"><%= header %></th>')
-        };
+        if (!(this.collection instanceof QueryCollection)) {
+            this.collection = new QueryCollection(this.collection);
+        }
     },
 
     initEvents: function ()
@@ -40,21 +41,49 @@ var Kernel_View_Ui_Table = AbstractView.extend({
     onModelRemoved: function (model)
     {
         var row = this.modelToRow[model.id];
+
+        // Can be that the model has no id.
+        // In that case rowId is used instead
+        if (row === undefined) {
+            row = this.modelToRow[model.rowId];
+        }
+
         row.$el.remove();
 
-        var index = array.indexOf(row);
+        var index = _.findIndex(this.rows, function (currentRow) {
+            return row.uid == currentRow.uid;
+        });
         if (index > -1) {
             this.rows.splice(index, 1);
+        }
+
+        if (model.id) {
+            delete this.modelToRow[model.id];
+        } else {
+            delete this.modelToRow[model.rowId];
         }
     },
 
     render: function (options) {
+        this.renderData = {
+            width: (100.0 / this.columns.length),
+            columns: _.map(this.columns, function (column) {
+                return _.extend({header: column.attr}, column); // allow for empty headers
+            }),
+            headerTemplate: _.template('<th style="width: ' +
+                '<%= width %>%;"><%= header %></th>')
+        };
+
         AbstractView.prototype.render.call(this, _.extend(options, {
             templateObj: this.renderData
         }));
 
         var _this = this;
         this.$tbody = this.$('tbody');
+
+        if (this.hideHeader) {
+            this.$('thead').hide();
+        }
 
         options.anmgr.waitForAction();
         this.collection.fetch({
@@ -147,7 +176,7 @@ var Kernel_View_Ui_Table = AbstractView.extend({
             anmgr.notifyEnd();
         });
 
-        this.addingRow.render({anmgr: waitForAddingRow});
+        this.addingRow.render({anmgr: waitForAddingRow, cssClasses: 'adding-row'});
 
         this.listenToOnce(this.addingRow, 'saved', function () {
             var tmpAnmgr = new AsyncNotificationManager(
@@ -195,7 +224,7 @@ var Kernel_View_Ui_Table = AbstractView.extend({
                     return parseFloat(cell.data);
                 }
 
-                return cell.data;
+                return cell.data.toLowerCase();
             });
 
             if (this.order[1] == 'desc') {
@@ -252,7 +281,8 @@ var Kernel_View_Ui_Table = AbstractView.extend({
             columns: this.renderData.columns,
             inlineEditing: this.inlineEditing,
             actions: this.actions,
-            saveAction: this.beforeSave
+            saveAction: this.beforeSave,
+            click: this.click
         });
 
         row.render({
@@ -260,6 +290,12 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         });
 
         this.rows.push(row);
-        this.modelToRow[model.id] = row;
+
+        if (model.id === undefined) {
+            model.rowId = _.uniqueId();
+            this.modelToRow[model.rowId] = row;
+        } else {
+            this.modelToRow[model.id] = row;
+        }
     }
 });

@@ -1,5 +1,5 @@
 var Kernel_View_Ui_Dialog = AbstractView.extend({
-    // properties that can be sen in the children
+    // properties that can be set in the children
     title: '',
     buttons: {
         Cancel: function () { return true; },
@@ -112,7 +112,7 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
             _this.bindExitListeners();
 
             $dialog.css('visibility', 'visible');
-        }, 10);
+        }, 25);
     },
 
     bindExitListeners: function () {
@@ -150,5 +150,26 @@ var Kernel_View_Ui_Dialog = AbstractView.extend({
         this.$target.parent().removeClass('selected');
         this.$target.removeClass('selected');
         AbstractView.prototype.remove.call(this);
+    }
+});
+
+var Kernel_View_Ui_DialogList = Kernel_View_Ui_Dialog.extend({
+    title: '',
+    buttons: {},
+
+    initialize: function (options) {
+        Kernel_View_Ui_Dialog.prototype.initialize.apply(this, arguments);
+
+        this.addView('content',
+            new Kernel_View_Ui_Table(_.extend({
+                hideHeader: true,
+            }, options))
+        );
+    },
+
+    render: function (options) {
+        Kernel_View_Ui_Dialog.prototype.render.apply(this, arguments);
+
+        this.$('.dialog').addClass('dialog-list');
     }
 });

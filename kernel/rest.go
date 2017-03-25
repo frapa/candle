@@ -15,17 +15,15 @@ import (
 type RestResource struct {
 	modelName    string
 	modelPackage string
-	constructor  interface{}
 }
 
-func NewRestResource(model AnyModel, modelName string, constructor interface{}) *RestResource {
+func NewRestResource(model AnyModel, modelName string) *RestResource {
 	m := new(RestResource)
 	m.modelName = modelName
-	m.constructor = constructor
 
 	modelType := reflect.ValueOf(model).Type()
-	tockens := strings.Split(modelType.PkgPath(), "/")
-	m.modelPackage = tockens[len(tockens)-1]
+	pkg := strings.Split(modelType.String(), ".")[0]
+	m.modelPackage = strings.Replace(pkg, "*", "", 10)
 
 	return m
 }
@@ -65,20 +63,6 @@ func GetLinkedResource(modelName string, q *query, linkName string) (*query, err
 			targetModels := q.To(linkName)
 
 			return targetModels, nil
-			// This isn't necessary anymore due to query.GetAll()
-			// Check if collection is empty
-			/*if targetModels.Count() == 0 {
-				return []AnyModel{}, nil
-			} else {
-				var collection []AnyModel
-				for targetModels.Next() {
-					targetModel := NewInstanceOf(targetResource.modelName)
-					targetModels.Get(targetModel)
-					collection = append(collection, targetModel)
-				}
-
-				return []AnyModel{}, nil
-			}*/
 		} else {
 			return new(query), errors.New("Linked class in not registered as rest resource")
 		}
@@ -134,8 +118,8 @@ func updateLinks(model AnyModel, linkMap map[string]interface{}) error {
 
 				// check if target exists!
 				if target.Count() != 0 {
-					var baseTarget BaseModel
-					target.Get(&baseTarget)
+					baseTarget := new(BaseModel)
+					target.Get(baseTarget)
 
 					model.Link(attrName, baseTarget)
 				} else {
@@ -172,10 +156,10 @@ func removeLinks(model AnyModel, unlinkMap map[string]interface{}) error {
 
 				// check if targets exist!
 				if targets.Count() != 0 {
-					var baseTarget BaseModel
+					baseTarget := NewBaseModel()
 
 					for targets.Next() {
-						targets.Get(&baseTarget)
+						targets.Get(baseTarget)
 						model.Unlink(attrName, baseTarget)
 					}
 				} else {
@@ -203,14 +187,14 @@ var App *ripple.Application = ripple.NewApplication()
 
 // --- Resource registration --- //
 
-func RegisterRestResource(model AnyModel, constructor interface{}) {
+func RegisterRestResource(model AnyModel) {
 	if restResources.Models == nil {
 		restResources.Models = make(map[string]*RestResource)
 	}
 
 	modelName := GetModelName(model)
 	restResources.Models[modelName] =
-		NewRestResource(model, modelName, constructor)
+		NewRestResource(model, modelName)
 }
 
 // --- Init function --- //
@@ -258,10 +242,10 @@ func (c *GenericRestController) GetUser(ctx *ripple.Context) *User {
 
 	filters := []filter{F("UserName", "=", userName), F("Email", "=", userName)}
 
-	var user User
-	All("User").Filter(Or(filters...)).Get(&user)
+	user := NewUser()
+	All("User").Filter(Or(filters...)).Get(user)
 
-	return &user
+	return user
 }
 
 func (c *GenericRestController) ApplyQueryParameters(q *query, ctx *ripple.Context) *query {
@@ -388,8 +372,7 @@ func (c *GenericRestController) Post(ctx *ripple.Context) {
 	if resource, ok := MatchResource(ctx); ok {
 		if ok, group := user.CanCreate(resource.modelName); ok {
 			// Create and save model
-			constructor := reflect.ValueOf(resource.constructor)
-			model := constructor.Call(nil)[0].Interface().(AnyModel)
+			model := NewInstanceOf(resource.modelName)
 
 			err := updateModel(body, model)
 			if err != nil {
@@ -418,14 +401,14 @@ func (c *GenericRestController) Delete(ctx *ripple.Context) {
 	}
 
 	if resource, ok := MatchResource(ctx); ok {
-		var base BaseModel
+		base := NewBaseModel()
 		model := All(resource.modelName).Filter("Id", "=", id).ApplyWritePermissions(user)
 
 		if model.Count() == 0 {
 			NewRestError("Trying to delete unexistant '" + resource.modelName +
 				"' with id '" + id + "' (or permissions missing).").Send(ctx)
 		} else {
-			model.Get(&base)
+			model.Get(base)
 			base.Delete()
 		}
 	}

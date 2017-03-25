@@ -2,11 +2,15 @@ var Kernel_View_Ui_Row = AbstractView.extend({
     cellTemplate: _.template('<td><%= data %></td>'),
 
     initialize: function (options) {
+        this.uid = _.uniqueId('row_');
+
+        this.columns = options.columns;
+
+        this.click = options.click;
         this.actions = options.actions ? options.actions : [];
         this.inlineEditing = options.inlineEditing;
         this.inlineEditingActivated = false;
         this.saveAction = options.saveAction;
-        this.columns = options.columns;
 
         this.buildCellData();
 
@@ -35,6 +39,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
         this.columnData = _.map(this.columns, function (col) {
             var cellData = {
+                label: col.header,
                 attr: col.attr,
                 link: col.link,
                 computed: false,
@@ -185,6 +190,23 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
             var $row = $('<tr></tr>');
             $row.append(_this.$cells);
+            if (options && options.cssClasses) $row.addClass(options.cssClasses);
+            if (_this.inlineEditingActivated) {
+                $row.addClass('inline-editing');
+                $row.prepend('<span class="inline-editing-title">Edit Transaction</span>');
+
+                var $footer = $('<footer></footer>');
+                $footer.append('<button class="flat inline-editing-cancel">Cancel</div>');
+                $footer.append('<button class="flat inline-editing-save">Save</div>');
+                $row.append($footer);
+
+                $row = $('<div class="inline-editing-conatiner"></div>').append($row);
+            }
+
+            if (_this.click) {
+                var callback = _this.click.bind(_this, _this.model);
+                $row.click(callback);
+            }
 
             _this.setElement($row);
 
@@ -298,7 +320,10 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             '<div class="widget-helper"></div></td>');
 
         if (cell.type === 'string' || cell.type === 'int64' || cell.type === 'float') {
-            cell.widget = new Kernel_View_Ui_Entry().render();
+            console.log(cell);
+            cell.widget = new Kernel_View_Ui_Entry({
+                label: cell.label
+            }).render();
             cell.widget.setValue(cell.data);
 
             // update model on change
@@ -315,7 +340,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             return $cell
         } else if (cell.type === 'Time') {
             cell.widget = new Kernel_View_Ui_Date({
-                label: cell.attr
+                label: cell.label
             }).render();
             
             // update model on change
@@ -347,6 +372,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             }
 
             cell.widget = new Kernel_View_Ui_Selectbox({
+                label: cell.label,
                 collection: linkedCollectionInst,
                 attr: cell.attr,
                 selected: cell.collection === undefined ?

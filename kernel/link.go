@@ -2,6 +2,7 @@ package kernel
 
 import (
 	"reflect"
+	"strings"
 )
 
 type LinkInfo struct {
@@ -29,8 +30,8 @@ func DefineLink(origin AnyModel, attr string, target AnyModel, inverse_ ...strin
 		inverse = inverse_[0]
 	}
 
-	originClass := reflect.TypeOf(origin).Name()
-	targetClass := reflect.TypeOf(target).Name()
+	originClass := strings.Split(reflect.TypeOf(origin).String(), ".")[1]
+	targetClass := strings.Split(reflect.TypeOf(target).String(), ".")[1]
 
 	if _, ok := linkTable[originClass]; !ok {
 		linkTable[originClass] = make(map[string]LinkInfo)
@@ -117,6 +118,7 @@ func Link(origin AnyModel, attr string, target AnyModel, linkInverse bool) error
 	var count uint
 	err := row.Scan(&count)
 	if err != nil {
+		println(err)
 		return err
 	}
 

@@ -17,8 +17,13 @@ var Kernel_View_Ui_Radio = AbstractView.extend({
     },
     
     initListenersAfterRender: function () {
+        var _this = this;
+
         if (this.changeCallback) {
-            this.$('input').on('change', this.changeCallback);
+            this.$('label').each(function (i, label) {
+                var $label = $(label);
+                $label.click(_this.changeCallback);
+            });
         }   
     },
 

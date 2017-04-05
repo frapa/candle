@@ -16,7 +16,8 @@ var Kernel_View_Ui_FieldFilter = AbstractView.extend({
             }, {
                 label: '>',
                 value: 'greater',
-            }]
+            }],
+            onChange: options.onChangeOptions,
         }));
         
         this.addView('match-case', new Kernel_View_Ui_Checkbox({

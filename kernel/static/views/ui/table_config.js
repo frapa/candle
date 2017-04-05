@@ -178,6 +178,10 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
         if (types != undefined) {
             // for some field types we show a different filter type
             // example: dates
+            var fieldType = types[fieldModel.get('field')]; 
+            if (fieldType === 'Time') {
+                filterUiType = Kernel_View_Ui_FieldFilter_DateFilter;
+            }
         }
 
         if (this.filters === undefined) {
@@ -201,7 +205,7 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
          * {
          *      attr: 'attrName',
          *      value: 'filterValue',
-         *      type: 'contains|equal|less|greater',
+         *      type: 'contains|equal|less|greater|between',
          *      matchCase: true|false,
          *      negate: true|false,
          * }
@@ -230,7 +234,12 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
         var searchString = filter.matchCase ? filter.value : filter.value.toLowerCase();
 
         return new QueryCollection(collection.filter(function (model) {
-            var value = filter.matchCase ? model.get(filter.attr) : model.get(filter.attr).toLowerCase();
+            var value = filter.matchCase ?
+                model.get(filter.attr) : model.get(filter.attr).toLowerCase();
+
+            if (model.types[filter.attr] == 'Time') {
+                value = new Date(value);
+            }
 
             var found = false;
             if (filter.type == 'contains') {
@@ -240,9 +249,13 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
             } else if (filter.type == 'equals') {
                 found = value == searchString;
             } else if (filter.type == 'less') {
-                found = value < searchString;
+                found = value <= searchString;
             } else if (filter.type == 'greater') {
-                found = value > searchString;
+                found = value >= searchString;
+            } else if (filter.type == 'between') {
+                if (searchString[0] && searchString[1]) {
+                    found = (value >= searchString[0] && value <= searchString[1]);
+                }
             }
 
             return filter.negate ? !found : found;

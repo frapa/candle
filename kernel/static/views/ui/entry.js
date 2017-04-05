@@ -9,6 +9,7 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
         this.stopTypingCallbacks = (options && options.onStopTyping) ? [options.onStopTyping] : [];
         this.isPasswordField = options && options.password;
         this.isAutoFocus = options && options.autoFocus;
+        this.hidden = options.hidden;
     },
 
     render: function (options) {
@@ -16,7 +17,8 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
             templateObj: {
 				fieldType: this.isPasswordField ? "password" : "text",
 				autoFocus: this.isAutoFocus ? "autofocus" : "",
-                label: this.label
+                label: this.label,
+                hidden: this.hidden,
             }
         }, options));
 
@@ -75,5 +77,13 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
 
     focus: function () {
         this.$('input').focus();
+    },
+
+    hide: function () {
+        this.$el.addClass('hidden');
+    },
+
+    show: function () {
+        this.$el.removeClass('hidden');
     }
 });

@@ -383,3 +383,7 @@ button.raised:active {
 .checkbox.button input[type="checkbox"]:checked + span.label {
     background: §border-color-light;
 }
+
+.connection-indicator {
+    cursor: default;
+}

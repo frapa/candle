@@ -14,8 +14,10 @@ var QueryCollection = UniqueCollection.extend({
      * has already been fetched, there is no need to fetch it again
      */
     fetch: function (options) {
+        var _this = this;
+
         // In candle it's possible to create anonymous collection
-        // for use in table. There have no url
+        // for use in table. These have no url.
         if (!this.url) {
             options.success(this, undefined, options)
             return;
@@ -24,10 +26,13 @@ var QueryCollection = UniqueCollection.extend({
         var force = (options && options.force) ? true : false;
 
         if (this.fetched && !force) {
-            options.success(this, undefined, options);
+            // This works better because code is run asyncronously
+            // and some code works better because it assumes fetch is
+            // asyncronous
+            setTimeout(function () {
+                options.success(_this, undefined, options);
+            }, 0);
         } else {
-            var _this = this;
-
             var innerSuccess = options.success;
             if (this.started) {
 				this.outerSuccess.successCallbacks.push(innerSuccess);
@@ -39,6 +44,7 @@ var QueryCollection = UniqueCollection.extend({
                         _this.fetched = true;
                         _this.started = false;
                         _this.trigger('fetched');
+                        ConnectionManager.endConnection();
 
                         _.each(_this2.successCallbacks, function (c) {
                             c(collection, response, options_);
@@ -50,6 +56,7 @@ var QueryCollection = UniqueCollection.extend({
                 options.success = this.outerSuccess.call;
 
                 this.started = true; // to avoid multiple concurrent requests for no reason
+                ConnectionManager.startConnection();
                 Backbone.Collection.prototype.fetch.call(this,
                     _.extend({data: $.param(_this.queryParams)}, options));
             }

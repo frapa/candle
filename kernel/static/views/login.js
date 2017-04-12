@@ -24,30 +24,11 @@ var Kernel_View_LogIn = AbstractView.extend({
         }
     },
 	
-	login: function() {
-        var _this = this;
+	login: function () {
 
 		var username = this.subviews.username.getValue();
 		var password = this.subviews.password.getValue();
 
-        if (!username || !password) {
-            return;
-        }
-		
-        $.getJSON('/controller/login/' + username + '/' + password + '/',
-            function (data)
-        {
-            if (data.success) {
-                global.username = username;
-                global.password = password;
-
-                localStorage['username'] = username;
-                localStorage['password'] = password;
-
-			    _this.remove();
-            } else {
-                alert(data.reason);
-            }
-        });
+		userHelper.login(username, password, this.remove.bind(this) );
 	},
 });

@@ -3,7 +3,7 @@
 # get the current path
 ROOT_PATH=`pwd`
 
-function join { shift; echo "$*"; }
+join () { shift; echo "$*"; }
 
 PATHS=()
 for ARG in $*

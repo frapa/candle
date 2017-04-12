@@ -257,7 +257,7 @@ func (c *GenericRestController) ApplyQueryParameters(q *query, ctx *ripple.Conte
 	count := 0
 	var fil filter
 	for key, value := range ctx.GetQuery() {
-		if key != "user" && key != "psw" {
+		if key != "user" && key != "psw" && key != "include_links" {
 			if len(value) == 1 && len(value[0]) == 0 {
 				// For now I support < and >
 				if strings.Contains(key, "<") {
@@ -292,6 +292,13 @@ func (c *GenericRestController) ApplyQueryParameters(q *query, ctx *ripple.Conte
 					count++
 				}
 			}
+		} else if key == "include_links" {
+			// This is actually a pretty cool piece of our REST interface where
+			// the client can specify which links it needs beforehand, saving
+			// substantial amount of requests and database reads at the same time.
+
+			// NOT YET IMPLEMETED
+			println("IMPLEMENT ME")
 		}
 	}
 	nq = nq.Filter(fil)

@@ -330,3 +330,60 @@ button.raised:active {
     color: §background-primary-color;
     box-shadow: 0 0 0.1em §border-color-dark;
 }
+
+.radio input[type="radio"] {
+    display: none;
+}
+
+.radio .label {
+    display: inline-block;
+    text-align: center;
+    width: 1.25em;
+    padding: 0.25em;
+    border: 1px solid §border-color;
+    border-right: 0;
+    cursor: default;
+
+    -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none;
+}
+
+.radio label:last-child .label {
+    border-right: 1px solid §border-color;
+}
+
+.radio input[type="radio"]:checked + span.label {
+    background: §border-color-light;
+}
+
+.checkbox.button input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox.button .label {
+    display: inline-block;
+    text-align: center;
+    width: 1.25em;
+    padding: 0.25em;
+    border: 1px solid §border-color;
+    cursor: default;
+
+    -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none;
+}
+
+.checkbox.button input[type="checkbox"]:checked + span.label {
+    background: §border-color-light;
+}
+
+.connection-indicator {
+    cursor: default;
+}

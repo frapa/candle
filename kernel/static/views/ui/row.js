@@ -233,22 +233,6 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         return this;
     },
 
-    // Custom rerender because it doesn't have a parent.
-    rerender: function () {
-        return
-        var _this = this;
-        var $oldDom = this.$el;
-
-        var onRowRerendered = new AsyncNotificationManager(function () {
-            $oldDom.replaceWith(_this.$el);
-        });
-
-        this.render({
-            inlineEditing: false,
-            anmgr: onRowRerendered
-        });
-    },
-
     inlineEditingListeners: function () {
         var _this = this;
 
@@ -340,7 +324,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             return $cell
         } else if (cell.type === 'Time') {
             cell.widget = new Kernel_View_Ui_Date({
-                label: cell.label
+                label: cell.label,
             }).render();
             
             // update model on change
@@ -401,5 +385,5 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             // Fall back on defualt non-editable mode
             return $(this.cellTemplate(cell));
         }
-    }
+    },
 });

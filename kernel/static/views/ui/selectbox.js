@@ -7,6 +7,11 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             this.attr = options.attr;
             this.collection.comparator = this.attr;
             this.label = options.label ? options.label : '';
+            this.changeCallback = options.onChange;
+        }
+
+        if (!(this.collection instanceof QueryCollection)) {
+            this.collection = new QueryCollection(this.collection);
         }
     },
 
@@ -33,6 +38,12 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
         }
 
         return this;
+    },
+
+    notifyChange: function (item) {
+        if (this.changeCallback) {
+            this.changeCallback(item);
+        }
     },
 
     initListeners: function () {
@@ -145,6 +156,8 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
 				console.log('focus');
 			}
         });								// buzz-made*/
+
+        this.listenTo(this, 'change', this.notifyChange.bind(this));
     },
 
     // Select previous or next element through the keyboard
@@ -277,6 +290,10 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
                 $item.addClass('selected');
             }
 
+            if (typeof displayValue != 'string') {
+                displayValue = displayValue.toString();
+            }
+
             var value = displayValue.toLowerCase();
             _this.validValues.push(value);
             _this.items.push({
@@ -299,5 +316,9 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
 
     getSelectedModel: function () {
         return this.selected;
-    }
+    },
+
+    getValue: function () {
+        return this.getSelectedModel();
+    },
 });

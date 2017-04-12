@@ -47,14 +47,17 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
         this.setElement(this.$wrapper);
         
         // GLOBAL SEARCH
+        this.$globalSearchContainer = $('<div class="global-search-container" /></div>');
         if (!this.searchEntry) {
             this.searchEntry = new Kernel_View_Ui_Entry({
                 label: 'Search all',
                 onEnter: this.searchAll.bind(this),
+                onStopTyping: this.searchAll.bind(this),
             });
             this.searchEntry.render();
         }
-        this.$configSidebar.append(this.searchEntry.$el);
+        this.$globalSearchContainer.append(this.searchEntry.$el);
+        this.$configSidebar.append(this.$globalSearchContainer);
 
         // LIST
         this.$filterList = $('<div class="filter-list"></div>');
@@ -142,7 +145,7 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
 
     addField: function (fieldModel) {
         this.columns.push({
-            attr: fieldModel.get('field')
+            attr: fieldModel.get('field'),
         });
 
         this.availableFields.remove(fieldModel);
@@ -175,16 +178,105 @@ var Kernel_View_Ui_ConfigTable = Kernel_View_Ui_Table.extend({
         if (types != undefined) {
             // for some field types we show a different filter type
             // example: dates
+            var fieldType = types[fieldModel.get('field')]; 
+            if (fieldType === 'Time') {
+                filterUiType = Kernel_View_Ui_FieldFilter_DateFilter;
+            }
         }
 
         if (this.filters === undefined) {
             this.filters = [];
         }
 
-        var filterUi = new filterUiType(fieldModel);
+        var filterUi = new filterUiType({
+            label: 'Filter "' + fieldModel.get('field') + '"',
+            onEnter: this.applyFilters.bind(this),
+            onStopTyping: this.applyFilters.bind(this),
+            onChangeOptions: this.applyFilters.bind(this),
+        });
+        filterUi.attr = fieldModel.get('field');
         filterUi.render();
         this.$filterList.append(filterUi.$el);
         this.filters.push(filterUi);
+    },
+
+    computeFilterTree: function () {
+        /* A filter is specified in the following way:
+         * {
+         *      attr: 'attrName',
+         *      value: 'filterValue',
+         *      type: 'contains|equal|less|greater|between',
+         *      matchCase: true|false,
+         *      negate: true|false,
+         * }
+         */
+        var filterTree = [];
+
+        _.each(this.filters, function (filter) {
+            var searchString = filter.getValue();
+            var filterType = filter.getType();
+            var matchCase = filter.getMatchCase();
+            var negate = filter.getNegate();
+
+            filterTree.push({
+                attr: filter.attr,
+                value: searchString,
+                type: filterType,
+                matchCase: matchCase,
+                negate: negate,
+            });
+        });
+
+        return filterTree;
+    },
+
+    filterCollection: function (filter, collection) {
+        var searchString = filter.matchCase ? filter.value : filter.value.toLowerCase();
+
+        return new QueryCollection(collection.filter(function (model) {
+            var value = filter.matchCase ?
+                model.get(filter.attr) : model.get(filter.attr).toLowerCase();
+
+            if (model.types[filter.attr] == 'Time') {
+                value = new Date(value);
+            }
+
+            var found = false;
+            if (filter.type == 'contains') {
+                if (value.indexOf(searchString) != -1) {
+                    found = true;
+                }
+            } else if (filter.type == 'equals') {
+                found = value == searchString;
+            } else if (filter.type == 'less') {
+                found = value <= searchString;
+            } else if (filter.type == 'greater') {
+                found = value >= searchString;
+            } else if (filter.type == 'between') {
+                if (searchString[0] && searchString[1]) {
+                    found = (value >= searchString[0] && value <= searchString[1]);
+                }
+            }
+
+            return filter.negate ? !found : found;
+        }));
+    },
+
+    applyFilters: function () {
+        var _this = this;
+        var filterTree = this.computeFilterTree();
+
+        var collection = this.originalCollection || this.collection;
+        _.each(filterTree, function (filter) {
+            collection = _this.filterCollection(filter, collection);
+        });
+                
+        if (!this.originalCollection) {
+            this.originalCollection = this.collection;
+        }
+        this.collection = collection;
+
+        this.rerender();
     },
 
     searchAll: function (searchString) {

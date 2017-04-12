@@ -34,7 +34,6 @@ func fontHandler(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
 
 	if request.URL.String() != "/fontello.woff2" {
-
 		writer.Write(fontello2)
 	} else {
 		writer.Write(fontello)

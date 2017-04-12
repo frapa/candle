@@ -245,3 +245,48 @@ div.table-filters {
     padding: 1.5em;
     flex-grow: 1;
 }
+
+.table-filters fieldset {
+    margin: 1.5em 0 1em 0;
+}
+
+.table-filters .global-search-container {
+    padding: 0 1.5em;
+}
+
+.table-filter-options-line {
+    display: flex;
+}
+
+.table-filter-options-line span:not(:last-child) {
+    margin-right: 1em;
+}
+
+.table-filter-options-line .type {
+    flex-grow: 1;
+}
+
+.table-filter-options-line fieldset {
+    flex-grow: 1;
+    display: flex;
+    margin-top: 0;
+}
+
+.table-filter-options-line fieldset:last-child {
+    margin-left: 1em;
+}
+
+.table-filter-options-line fieldset input[type="text"] {
+    width: 5em;
+    order: 2;
+}
+
+.table-filter-options-line fieldset label {
+    order: 1;
+    position: static;
+}
+
+.table-filter-options-line fieldset input[type="text"]:focus ~ label,
+.table-filter-options-line fieldset input[type="text"]:valid ~ label {
+    font-size: 100%;
+}

@@ -1,6 +1,7 @@
 var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
     initialize: function (options) {
         this.selectedDate = new Date();
+        this.onChange = options.onChange;
 
         Kernel_View_Ui_Entry.prototype.initialize
             .call(this, _.extend({}, options));
@@ -61,6 +62,10 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
                 _this.dialog.close();
             })
             .focus(this.focus.bind(this));
+
+        if (this.onChange) {
+            this.listenTo(this, 'change', this.onChange.bind(this));
+        }
 
         return this;
     },
@@ -212,5 +217,9 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
 
         html += '</table></div>';
         return html;
-    } 
+    },
+
+    getValue: function () {
+        return this.selectedDate;
+    },
 });

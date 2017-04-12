@@ -1,9 +1,27 @@
 var RelationalModel = UniqueModel.extend({
-    initialize: function () {
+    initialize: function (modelData) {
         this.toCache = {};
         this.linkedModelsCache = {};
 
+        if (modelData && modelData.hasOwnProperty('Links_')) {
+            this.cacheLinksOnInit();
+        }
+
         this.checkTypes();
+    },
+
+    cacheLinksOnInit: function () {
+        var _this = this;
+
+        _.each(this.get('Links_'), function (models, attr) {
+            var collection = _this.createNewCollection(attr);
+            _.each(models, function (model) {
+                collection.add(model);
+            });
+            collection.fetched = true;
+            _this.toCache[attr] = collection;
+
+        });
     },
 
     // If the model was created out of data, assign types
@@ -178,6 +196,19 @@ var RelationalModel = UniqueModel.extend({
     },
 
     save: function (attributes, options) {
+        ConnectionManager.startConnection(true);
+        innerSuccess = options.success;
+        innerError = options.error;
+
+        options.success = function () {
+            ConnectionManager.endConnection(true);
+            innerSuccess.apply(arguments);
+        };
+        options.error = function () {
+            ConnectionManager.endConnection(true);
+            innerError.apply(arguments);
+        };
+
         UniqueModel.prototype.save.call(this, attributes, options);
         
         // Model is saved. The cached links are not relevant anymore,

@@ -4,15 +4,16 @@ UniqueCollectionCache = {};
  */
 var UniqueCollection = Backbone.Collection.extend({
     constructor: function (models, options) {
-        if (options && options.url) {
+        if ((options && options.url)) {
             this.url = options.url;
-        } else {
+        } else if (!this.url) {
             Backbone.Collection.apply(this, arguments);
             return;
         }
         this.queryParams = options && options.params ? options.params : {};
 
         var uniqueTocken = this.url + this.hashParams();
+        this.uniqueTocken = uniqueTocken;
         if (uniqueTocken in UniqueCollectionCache) {
             return UniqueCollectionCache[uniqueTocken];
         }

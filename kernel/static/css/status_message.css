@@ -32,3 +32,7 @@
 .status-message.success > div {
     background: #b7c656;
 }
+
+.status-message content {
+    flex-grow: 1;
+}

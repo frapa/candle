@@ -94,6 +94,10 @@ section table.treeSubTable tr:last-child {
         color: §primary-color;
     }
 
+    table.table tr.adding-row {
+        background: §border-color-light;
+    }
+
     div.adding-row-indicator {
         position: absolute;
         left: 0;

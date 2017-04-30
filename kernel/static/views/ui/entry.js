@@ -54,6 +54,7 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
 
         this.$('input')
             .on('change', triggerChange)
+            .on('input', triggerChange)
             .on('keyup', callEnterCallbacks)
             .on('blur', callBlurCallbacks)
             .on('keyup', _.debounce(callStopTypingCallbacks, 500));

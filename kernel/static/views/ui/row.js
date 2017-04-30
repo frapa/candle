@@ -24,7 +24,17 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             this.alreadyWatching = true;
 
             this.listenTo(this.model, 'change', function () {
-                this.rerender();
+                if (!_this.inlineEditingActivated) {
+                    _this.rerender();
+                }
+            });
+
+            this.listenTo(this.model, 'sync', function () {
+                // on save show fading tick
+                var $tick = $('<span class="save-tick icon-check"></span>');
+                _this.$('.table-actions').append($tick);
+                setTimeout(function () { $tick.addClass('fade'); }, 500)
+                setTimeout(function () { $tick.remove(); }, 2000);
             });
         }
     },
@@ -61,24 +71,20 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 cellData.type = col.type;
                 cellData.computed = true;
             } else if (col.link !== undefined) {
-                if (_this.model.isNew()) {
-                    cellData.data = '';
-                } else {
-                    onLinksFetched.waitForAction();
-                    _this.model.to(col.link)
-                    .fetch({
-                        success: function (collection) {
-                            if (collection.length === 0) {
-                                cellData.data = '';
-                            } else {
-                                cellData.data = collection.at(0).get(col.attr);
-                                cellData.collection = collection;
-                            }
-
-                            onLinksFetched.notifyEnd();
+                onLinksFetched.waitForAction();
+                _this.model.to(col.link)
+                .fetch({
+                    success: function (collection) {
+                        if (collection.length === 0) {
+                            cellData.data = '';
+                        } else {
+                            cellData.data = collection.at(0).get(col.attr);
+                            cellData.collection = collection;
                         }
-                    });
-                }
+
+                        onLinksFetched.notifyEnd();
+                    }
+                });
                 cellData.type = 'link';
             } else {
                 cellData.data = '';
@@ -263,32 +269,27 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             this.saveAction(this.model);
         }
 
-        var $current = this.$el;
-        var replaceWhenReady = new AsyncNotificationManager(function () {
-            $current.replaceWith(_this.$el);
-        });
-
-        $current.find('.icon-floppy')[0].className = "icon-spin1 animation-spin";
-
         this.model.save(undefined, {
             success: function (model) {
-                _this.inlineEditingActivated = false;
-
-                _this.buildCellData();
-                _this.render({
-                    inlineEditing: false,
-                    anmgr: replaceWhenReady
-                });
-                
-                replaceWhenReady.notifyEnd();
-            }
+                            }
         });
+        
+        this.inlineEditingActivated = false;
 
-        _this.trigger('saved');
+        this.buildCellData();
+        this.rerender();
     },
 
     updateModel: function (link, cell, value) {
         if (link) {
+            /* For some tables it's possible to have
+             * a column of type link without the attrib link set
+             * to a real value. This because maybe the column
+             * does not correspond to a specific attrib, but
+             * the onSave is used at save time to link the correct
+             * attrib. In this case we should just stop here.
+             */
+            if (cell.link == undefined) return;
             this.model.relink(cell.link, value);
         } else {
             if (cell.type === 'int64') {
@@ -300,11 +301,11 @@ var Kernel_View_Ui_Row = AbstractView.extend({
     },
 
     createEditingWidget: function (cell, anmgr) {
+        var _this = this;
         var $cell = $('<td class="widget">' +
             '<div class="widget-helper"></div></td>');
 
         if (cell.type === 'string' || cell.type === 'int64' || cell.type === 'float') {
-            console.log(cell);
             cell.widget = new Kernel_View_Ui_Entry({
                 label: cell.label
             }).render();
@@ -312,8 +313,12 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
             // update model on change
             if (cell.onSave !== undefined) {
-                this.listenTo(cell.widget, 'change',
-                    cell.onSave.bind(null, cell, this.model));
+                this.listenTo(cell.widget, 'change', function () {
+                    cell.onSave.apply(null, [cell, _this.model]
+                        .concat(Array.prototype.slice.call(arguments)));
+                    _this.updateModel.apply(this, [false, cell]
+                        .concat(Array.prototype.slice.call(arguments)));
+                });
             } else {
                 this.listenTo(cell.widget, 'change',
                     this.updateModel.bind(this, false, cell));
@@ -329,8 +334,12 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             
             // update model on change
             if (cell.onSave !== undefined) {
-                this.listenTo(cell.widget, 'change',
-                    cell.onSave.bind(null, cell, this.model));
+                this.listenTo(cell.widget, 'change', function () {
+                    cell.onSave.apply(null, [cell, _this.model]
+                        .concat(Array.prototype.slice.call(arguments)));
+                    _this.updateModel.apply(this, [false, cell]
+                        .concat(Array.prototype.slice.call(arguments)));
+                });
             } else {
                 this.listenTo(cell.widget, 'change', function (date) {
                     this.updateModel(false, cell, date.toISOString());
@@ -373,8 +382,12 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             
             // update model on change
             if (cell.onSave !== undefined) {
-                this.listenTo(cell.widget, 'change',
-                    cell.onSave.bind(null, cell, this.model));
+                this.listenTo(cell.widget, 'change', function () {
+                    cell.onSave.apply(null, [cell, _this.model]
+                        .concat(Array.prototype.slice.call(arguments)));
+                    _this.updateModel.apply(this, [true, cell]
+                        .concat(Array.prototype.slice.call(arguments)));
+                });
             } else {
                 this.listenTo(cell.widget, 'change',
                     this.updateModel.bind(this, true, cell));

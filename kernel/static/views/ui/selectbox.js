@@ -143,19 +143,22 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             _this.$('.selectbox').show();
         });
 
-        /*this.$('.selectbox-arrow')		// buzz-made
-        .click(function (event) {
-			event.stopPropagation();
-			console.log($input[0]);
-			console.log(document.activeElement);
-			if ($input.is(':focus')) {
-				$input.blur();
-				console.log('blur');
-			} else {
-				$input.focus();
-				console.log('focus');
-			}
-        });								// buzz-made*/
+        var justClosed = false;
+        var $arrow = this.$('.selectbox-arrow');
+        $arrow
+        .click(function (event) 
+        {
+            if (!justClosed) {
+                $input.focus();
+            }
+        })
+        .on('mousedown', function (event) 
+        {
+            justClosed = $input[0] == document.activeElement;
+            if (justClosed) {
+                $input.blur();
+            }
+        });
 
         this.listenTo(this, 'change', this.notifyChange.bind(this));
     },

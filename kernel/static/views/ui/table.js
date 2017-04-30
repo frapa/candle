@@ -6,6 +6,7 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         this.actions = options.actions;
         this.inlineEditing = options.inlineEditing;
         this.hasAddingRow = options.addingRow;
+        this.initializeAddingModel = options.initializeAddingModel;
         this.beforeSave = options.beforeSave;
         this.modelToRow = {};
         this.order = options.order ? options.order.split(' ') : undefined;
@@ -25,17 +26,34 @@ var Kernel_View_Ui_Table = AbstractView.extend({
 
     initEvents: function ()
     {
-        this.listenTo(this.collection, 'add', this.onModelAdded.bind(this));
-        this.listenTo(this.collection, 'remove', this.onModelRemoved.bind(this));
+        if (!this.eventsBound) {
+            this.listenTo(this.collection, 'add', this.onModelAdded.bind(this));
+            this.listenTo(this.collection, 'remove', this.onModelRemoved.bind(this));
+            this.eventsBound = true;
+        }
     },
 
     onModelAdded: function (model)
     {
-        /*var asyncWaitForRow = new AsyncNotificationManager(function () {
-            console.info(123);
-        });*/
+        var _this = this;
 
-        //this.createRowFromModel(asyncWaitForRow, model);
+        var insertedRow;
+        var asyncWaitForRow = new AsyncNotificationManager(function () {
+            // If it's ordered, add the row in the right place
+            if (_this.order) {
+                var newRowIndex = _.findIndex(_this.getSortedRows(), function (row) {
+                    return row == insertedRow;
+                });
+                _this.$tbody.find('tr:nth-child(' + (newRowIndex + 1) + ')').after(insertedRow.$el);
+            // Otherwise just add it as the beginning
+            } else {
+                _this.$tbody.prepend(insertedRow.$el);
+            }
+        });
+
+        insertedRow = this.createRowFromModel(asyncWaitForRow, model);
+
+        asyncWaitForRow.notifyEnd();
     },
 
     onModelRemoved: function (model)
@@ -96,34 +114,14 @@ var Kernel_View_Ui_Table = AbstractView.extend({
     initKeys: function () {
         var _this = this;
 
-        keymage('ctrl-s', function () {
-            var editedRows = _.filter(_this.rows, function (row) {
-                return row.inlineEditingActivated;
+        keymage('ctrl-s', function (event) {
+            _this.addingRow.onAdd();
+            // Then focus on the first field of the addingRow
+            // to help further inputs
+            _this.addingRow.once('rerender', function () {
+               _this.addingRow.$('input').first().focus(); 
             });
-
-            _.each(editedRows, function (row) {
-                row.saveEditedRow();
-            });
-
-            if (_this.hasAddingRow) {
-                // For convenience already prepare new row
-                _this.addingRow.once('saved', function () {
-                    _this.addingRow.$('td').first().click();
-                    _this.addingRow.once('activated', function () {
-                        _this.addingRow.$('input').first().focus();
-                    });
-                });
-
-                // If we do not blur current input, the changes 
-                // will be left out. Because the model wasn't updated
-                // yet.
-                $(':focus').blur();
-
-                _this.addingRow.saveEditedRow();
-            }
-
-            return false;
-        });
+        }, {preventDefault: true});
     },
 
     initHeader: function () {
@@ -145,7 +143,7 @@ var Kernel_View_Ui_Table = AbstractView.extend({
     },
 
     sortByClickedCol: function (colIdx) {
-
+        start = new Date();
         if (this.colIdx != colIdx) {
             this.order = ['', 'asc']
             this.colIdx = colIdx;
@@ -157,39 +155,27 @@ var Kernel_View_Ui_Table = AbstractView.extend({
     },
 
     renderAddingRow: function (anmgr) {
-        var newModel = new this.collection.model();
-        this.addingRow = new Kernel_View_Ui_Row({
-            model: newModel,
+        var _this = this;
+
+        this.addingRow = new Kernel_View_Ui_AddingRowHelper({
             columns: this.renderData.columns,
-            inlineEditing: true,
-            actions: this.actions,
-            saveAction: this.beforeSave
+            modelClass: this.collection.model,
+            collection: this.collection,
+            beforeSave: this.beforeSave,
+            initializeAddingModel: this.initializeAddingModel,
         });
 
         anmgr.waitForAction();
         var _this = this;
         var waitForAddingRow = new AsyncNotificationManager(function () {
-            var $firstCell = _this.addingRow.$('td').first();
-            $firstCell.append('&nbsp;<div class="adding-row-indicator">' +
-                'Click here to add row...</div>');
+            _this.$tbody.prepend(_this.addingRow.$el);
 
             anmgr.notifyEnd();
         });
 
-        this.addingRow.render({anmgr: waitForAddingRow, cssClasses: 'adding-row'});
-
-        this.listenToOnce(this.addingRow, 'saved', function () {
-            var tmpAnmgr = new AsyncNotificationManager(
-                _this.prependAddingRow.bind(_this));
-            _this.renderAddingRow(tmpAnmgr);
-            tmpAnmgr.notifyEnd();
-        });
+        this.addingRow.render({anmgr: waitForAddingRow});
 
         waitForAddingRow.notifyEnd();
-    },
-
-    prependAddingRow: function () {
-        this.$tbody.prepend(this.addingRow.$el);
     },
 
     getSortedRows: function () {
@@ -247,15 +233,11 @@ var Kernel_View_Ui_Table = AbstractView.extend({
                 var $rows = _.pluck(_this.getSortedRows(), '$el');
                 _this.$tbody.append($rows);
 
-                var $rows = _.pluck(_this.getSortedRows(), '$el');
-                if (_this.hasAddingRow) {
-                    _this.prependAddingRow();
-                }
-
                 _this.initKeys();
                 _this.initHeader();
                 anmgr.notifyEnd();
             });
+
             this.collection.map(this.createRowFromModel.bind(this,
                 asyncWaitForRows));
 
@@ -297,5 +279,120 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         } else {
             this.modelToRow[model.id] = row;
         }
+
+        return row;
     }
+});
+
+var Kernel_View_Ui_AddingRowHelper = AbstractView.extend({
+    initialize: function (options) {
+        this.columns = options.columns;
+        this.collection = options.collection;
+        this.modelClass = options.modelClass;
+        this.beforeSave = options.beforeSave;
+        this.initializeAddingModel = options.initializeAddingModel;
+
+        this.addButtonActive = false;
+    },
+
+    render: function (options) {
+        var _this = this;
+
+        this.tmpModel = new this.modelClass();
+        if (this.initializeAddingModel) {
+            this.initializeAddingModel(this.tmpModel);
+        }
+
+        // Create fake row to exploit the already written logic
+        // that selects the Ui type based on the model attribute type
+        this.helperRow = new Kernel_View_Ui_Row({
+            model: this.tmpModel,
+            columns: this.columns,
+        });
+
+        // Use the heper row when ready
+        options.anmgr.waitForAction();
+        var afterRenderHelperRow = new AsyncNotificationManager(function () {
+            _this.renderAddingRowFields(_this.helperRow);
+            _this.initEvents();
+            options.anmgr.notifyEnd();
+        });
+
+        this.helperRow.render({
+            anmgr: afterRenderHelperRow,
+            inlineEditing: true,
+        })
+
+        afterRenderHelperRow.notifyEnd();
+    },
+
+    renderAddingRowFields: function (helperRow) {
+        var _this = this;
+        var $dom = $('<tr class="adding-row"></tr>');
+
+        this.helperRow.$el.find('td').each(function (i, td) {
+            var $td = $(td);
+
+            // copy and modify table actions
+            var $tableActions = $td.find('.table-actions');
+            if ($tableActions.length) {
+                _this.initAddAction($tableActions);
+            }
+            
+            $dom.append(td);
+        });
+
+        this.setElement($dom);
+        this.rendered = true;
+    },
+
+    initEvents: function () {
+        var _this = this;
+        // Make sure the model is modified at least once before allowing saving
+        // of the temporary model
+        this.listenTo(this.tmpModel, 'change', function () {
+            _this.enableSave();
+        });
+    },
+
+    initAddAction: function ($tableActions) {
+        // Remove actions
+        $tableActions.html('');
+
+        // Create save action
+        this.$saveAction = $('<span class="table-action icon-plus-circled"></span>');
+        this.$saveAction.css('opacity', '0.5');
+        this.$saveAction.click(this.onAdd.bind(this));
+
+        this.addTooltip = new Kernel_View_Ui_Tooltip('Add');
+        this.addTooltip.openOnHover(this.$saveAction);
+
+        $tableActions.append(this.$saveAction);
+    },
+
+    onAdd: function () {
+        if (!this.addButtonActive) return;
+
+        var _this = this;
+
+        this.beforeSave(this.tmpModel);
+        this.tmpModel.save();
+
+        this.collection.add(this.tmpModel);
+        
+        // This is not removed otherwise
+        this.addTooltip.remove();
+        this.rerender();
+        this.disableSave();
+    },
+
+    enableSave: function () {
+        this.addButtonActive = true;
+        this.$saveAction.css('opacity', '1');
+    },
+
+    disableSave: function () {
+        this.addButtonActive = false;
+        this.$saveAction.css('opacity', '0.5');
+    },
 });

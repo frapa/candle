@@ -27,7 +27,7 @@ var Kernel_View_Ui_ConnectionIndicator = AbstractView.extend({
     },
 
     saveEnd: function () {
-        if (ConnectioManager.saveConnections == 0) {
+        if (ConnectionManager.saveConnections == 0) {
             if (ConnectionManager.connection == 0) {
                 this.$el.removeClass('icon-upload-cloud');
                 this.$el.addClass('icon-cloud');

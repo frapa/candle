@@ -20,7 +20,6 @@ var RelationalModel = UniqueModel.extend({
             });
             collection.fetched = true;
             _this.toCache[attr] = collection;
-
         });
     },
 
@@ -69,11 +68,11 @@ var RelationalModel = UniqueModel.extend({
             // this model since the link isn't saved yet. (On save we reset
             // the cache, so that this link won't be there anymore)
             
-            if (!this.cacheLinkedModel.hasOwnProperty(attr)) {
-                this.cacheLinkedModel[attr] = [];
+            if (!this.linkedModelsCache.hasOwnProperty(attr)) {
+                this.linkedModelsCache[attr] = [];
             }
 
-            this.cacheLinkedModel[attr].push(model);
+            this.linkedModelsCache[attr].push(model);
         }
     },
 
@@ -91,8 +90,16 @@ var RelationalModel = UniqueModel.extend({
         if (this.links[attr] === undefined) {
             console.error('There is no relation named "' + attr + '"');
         } else if (this.isNew()) {
-            // Model wasn't persisted we need to make up something
-            console.error('Cannot go a complex step away from unpersisted model');
+            // Allow to to get back 
+            var isInCache = this.linkedModelsCache.hasOwnProperty(attr);
+
+            var tempCollectionInst = new QueryCollection();
+            tempCollectionInst.fetched = true;
+            if (isInCache) {
+                tempCollectionInst.add(this.linkedModelsCache[attr]);
+            }
+
+            return tempCollectionInst;
         } else {
             // check if the model is in cache
             var isInCache = this.toCache.hasOwnProperty(attr);
@@ -137,6 +144,7 @@ var RelationalModel = UniqueModel.extend({
         var setLink = function () {
             links[attr].push(model.id);
             _this.set('links', links);
+            _this.trigger('change');
 
             if (callback) callback();
         }
@@ -173,7 +181,7 @@ var RelationalModel = UniqueModel.extend({
         this.set('links', links);
     },*/
 
-    unlinkAll: function (attr) {
+    unlinkAll: function (attr, doNotTrigger) {
         var unlink = this.get('unlink');
         unlink = unlink == undefined ? {} : unlink;
         unlink[attr] = ['all'];
@@ -188,31 +196,39 @@ var RelationalModel = UniqueModel.extend({
         
         links[attr] = [];
         this.set('links', links);
+        if (!doNotTrigger) _this.trigger('change');
     },
 
     relink: function (attr, model, callback) {
-        this.unlinkAll(attr);
+        if (attr === undefined) console.error(attr);
+        this.unlinkAll(attr, true);
         this.link(attr, model, callback);
     },
 
     save: function (attributes, options) {
         ConnectionManager.startConnection(true);
-        innerSuccess = options.success;
-        innerError = options.error;
-
+        innerSuccess = options && options.success;
+        innerError = options && options.error;
+    
+        options = {} || options;
         options.success = function () {
             ConnectionManager.endConnection(true);
-            innerSuccess.apply(arguments);
+
+            // Model is saved. The cached links are not relevant anymore,
+            // because a fetch would get them from the server. Delete the cache.
+            this.linkedModelsCache = {};
+
+            if (innerSuccess) {
+                innerSuccess.apply(arguments);
+            }        
         };
         options.error = function () {
             ConnectionManager.endConnection(true);
-            innerError.apply(arguments);
+            if (innerError) {
+                innerError.apply(arguments);
+            }
         };
 
         UniqueModel.prototype.save.call(this, attributes, options);
-        
-        // Model is saved. The cached links are not relevant anymore,
-        // because a fetch would get them from the server. Delete the cache.
-        this.linkedModelsCache = {};
     },
 });

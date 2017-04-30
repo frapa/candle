@@ -79,14 +79,18 @@ var AbstractView = Backbone.View.extend({
     },
 
     open: function (view, subview) {
+        var _this = this;
         if (this.subviews === undefined) {
             this.subviews = {};
+        }
+        if (this.loadingIndicators === undefined) {
+            this.loadingIndicators = {};
         }
 
         var currentView = this.subviews[subview];
 
         // Do nothing if the same action was just undertaken!
-        if (currentView == view) {
+        if (currentView && currentView == view) {
             return;
         }
 
@@ -94,16 +98,30 @@ var AbstractView = Backbone.View.extend({
             // we already generated some html for this view.
             // we need to clean it up before going on.
             
-            // show that loading is in progress
+            // We need to take care of the case in which a new view is opened,
+            // while the old did not yet finish rendering.
+            var oldLoadingIndicator = null;
+            if (this.loadingIndicators[subview]) {
+                oldLoadingIndicator = this.loadingIndicators[subview];
+            }
+
+            // create loading indicator to show that something is happening
             var loadingIndicator = new loadingIndicators.empty();
+            this.loadingIndicators[subview] = loadingIndicator;
 
             var anmgr = new AsyncNotificationManager(function () {
                 loadingIndicator.$el.replaceWith(view.$el);
                 loadingIndicator.remove();
+                _this.loadingIndicators[subview] = null;
             });
 
+            // show that loading is in progress
             loadingIndicator.render();
-            currentView.$el.replaceWith(loadingIndicator.$el);
+            if (oldLoadingIndicator) {
+                oldLoadingIndicator.$el.replaceWith(loadingIndicator.$el)
+            } else {
+                currentView.$el.replaceWith(loadingIndicator.$el);
+            }
 
             view.render({anmgr: anmgr});
 
@@ -149,11 +167,16 @@ var AbstractView = Backbone.View.extend({
     },
 
     rerender: function () {
-        if (this.parentView) {
-            this.parentView.close(this.renderedInto);
-            this.parentView.open(this, this.renderedInto);
-        } else {
-            console.error("Cannot rerender: parent missing.");
-        }
+        var _this = this;
+
+        var $oldEl = this.$el;
+        var replaceHtml = new AsyncNotificationManager(function () {
+            $oldEl.replaceWith(_this.$el);
+            _this.trigger('rerender');
+        });
+
+        this.render({anmgr: replaceHtml});
+
+        replaceHtml.notifyEnd();
     }
 });

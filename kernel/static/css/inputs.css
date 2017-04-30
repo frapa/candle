@@ -1,5 +1,6 @@
 fieldset {
     position: relative;
+    display: flex;
     border: 0;
     margin: 2.5em 0;
     padding: 0;
@@ -8,6 +9,7 @@ fieldset {
 }
 
 .widget-helper fieldset {
+    width: 100%;
     margin: 0;
     margin-bottom: 0.5em;
 }
@@ -28,16 +30,12 @@ input {
 /* Normal */
 input[type="text"],
 input[type="password"] {
+    flex-grow: 1;
     outline: none;
     font-size: 100%;
     border: 0;
     padding: 0.25em 0.5em;
     background: transparent;
-}
-
-.widget-helper input[type="text"],
-.widget-helper input[type="password"] {
-    width: 100%;
 }
 
 input[type="text"] ~ label,
@@ -102,6 +100,10 @@ input[type="password"]:invalid {
     background: transparent;
 }
 
+.selectbox-input:focus ~ .selectbox-arrow::before {
+    content: '\e87e';
+}
+
 .selectbox-arrow {
     position: absolute;
     top: 0;
@@ -110,6 +112,7 @@ input[type="password"]:invalid {
     width: 1.5em;
     display: flex;
     align-items: center;
+    cursor: default;
 }
 
 .selectbox-item {

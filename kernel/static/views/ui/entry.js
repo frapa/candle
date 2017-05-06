@@ -23,6 +23,10 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
         }, options));
 
         this.initListenersAfterRender();
+
+        if (this.value != undefined) this.setValue(this.value);
+        this.value = undefined;
+
         return this;
     },
 
@@ -61,7 +65,11 @@ var Kernel_View_Ui_Entry = AbstractView.extend({
     },
     
     setValue: function (value) {
-        return this.$('input')[0].value = value;
+        if (!this.rendered) {
+            this.value = value;
+        } else {
+            return this.$('input')[0].value = value;
+        }
     },
 
     getValue: function () {

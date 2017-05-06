@@ -56,3 +56,12 @@ h3 {
 .hidden {
     display: none !important;
 }
+
+a, a:visited {
+    color: §primary-color;
+}
+
+a:hover {
+    color: §primary-color-similar;
+    text-decoration: none;
+}

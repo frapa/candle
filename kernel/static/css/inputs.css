@@ -18,7 +18,7 @@ fieldset {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: -0.5em;
+    bottom: -0.25em;
     border-bottom: 1px solid §secondary-text-color;
 }
 

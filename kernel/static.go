@@ -3,6 +3,7 @@ package kernel
 import (
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 var index []byte
@@ -57,9 +58,12 @@ func loadResources() {
 func StartStaticServer() {
 	loadResources()
 
+	os.Mkdir("content", os.ModePerm)
+
 	http.HandleFunc("/static/concat.js", javascriptHandler)
 	http.HandleFunc("/static/concat.css", cssHandler)
 	http.HandleFunc("/static/font/fontello.woff", fontHandler)
 	http.HandleFunc("/static/font/fontello.woff2", fontHandler)
+	http.Handle("/static/content/", http.StripPrefix("/static/content/", http.FileServer(http.Dir("./content"))))
 	http.HandleFunc("/", indexHandler)
 }

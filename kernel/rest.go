@@ -215,7 +215,7 @@ func StartRestServer() {
 	App.AddRoute(ripple.Route{Pattern: "/api/:model/:id/:link", Controller: "rest"})
 
 	// Init extra controllers in kernel
-	initLoginController()
+	InitLoginControllerFunc()
 
 	// Start the server
 	http.HandleFunc("/api/", App.ServeHTTP)
@@ -230,7 +230,7 @@ func (c *GenericRestController) Authenticate(ctx *ripple.Context) bool {
 	user := ctx.GetQueryParam("user")
 	password := ctx.GetQueryParam("psw")
 
-	if err := CheckUserPassword(user, password); err == nil {
+	if _, err := CheckUserPassword(user, password); err == nil {
 		return true
 	} else {
 		return false

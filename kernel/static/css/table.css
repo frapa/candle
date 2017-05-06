@@ -197,6 +197,10 @@ section table.treeSubTable tr:last-child {
         margin-top: 2em;
         text-align: right;
     }
+
+    table.table td {
+        padding: 0.75em 0.5em;
+    }
 }
 
 table.table th.filter-header {

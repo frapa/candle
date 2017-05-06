@@ -1,5 +1,4 @@
 var userHelper = {
-	// login
 	login: function (username, password, successCallback) {
 		// check if variables are empty
         if (!username || !password) {
@@ -18,17 +17,18 @@ var userHelper = {
                 localStorage['username'] = username;
                 localStorage['password'] = password;
 
+                global.accountData = data.accountData;
+                localStorage['accountData'] = JSON.stringify(data.accountData);
+
 			    successCallback();
             } else {
                 alert(data.reason);
             }
         });
 	},
-	// logout
+
 	logout: function () {
 		localStorage.clear();
 		location.reload();
 	},
-
-	// change password
 };

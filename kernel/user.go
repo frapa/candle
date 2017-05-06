@@ -55,26 +55,35 @@ func pswToHash(psw string, salt string) string {
 	return hash
 }
 
-// check password to login
-func CheckUserPassword(name string, psw string) error {
-	user := All("User").Filter("UserName", "=", name)
+func GetUserFromAuth(auth string) (*User, error) {
+	user := All("User").Filter("UserName", "=", auth)
 
 	// Allow login with email
 	if user.Count() == 0 {
-		user = All("User").Filter("Email", "=", name)
+		user = All("User").Filter("Email", "=", auth)
 
 		// This means the user does not exist
 		if user.Count() == 0 {
-			return errors.New("User does not exist.")
+			return nil, errors.New("User does not exist.")
 		}
 	}
 
 	u := NewUser()
 	user.Get(u)
 
+	return u, nil
+}
+
+// check password to login
+func CheckUserPassword(name string, psw string) (*User, error) {
+	u, err := GetUserFromAuth(name)
+	if err != nil {
+		return nil, err
+	}
+
 	if pswToHash(psw, u.Salt) == u.PswHash {
-		return nil
+		return u, nil
 	} else {
-		return errors.New("Password is wrong.")
+		return nil, errors.New("Password is wrong.")
 	}
 }

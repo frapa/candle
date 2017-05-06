@@ -1,7 +1,8 @@
-package kernel
+package contact
 
 import (
 	"bytes"
+	k "github.com/frapa/candle/kernel"
 	"github.com/frapa/ripple"
 	tpl "text/template"
 )
@@ -9,7 +10,8 @@ import (
 var accountDataStr string = `
 {
 	"username": "{{ .UserName }}",
-	"email": "{{ .Email }}"
+	"email": "{{ .Email }}",
+	"contactId": "{{ .ContactId }}"
 }
 `
 
@@ -21,23 +23,31 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	// disable kernel login controller in favour of this one
+	k.InitLoginControllerFunc = initLoginController
 }
 
 type loginController struct {
-	GenericRestController
+	k.GenericRestController
 }
 
-func generateUserDataJson(user *User) string {
+func generateUserDataJson(user *k.User) string {
 	buffer := new(bytes.Buffer)
 
 	type accountInfo struct {
-		UserName string
-		Email    string
+		UserName  string
+		Email     string
+		ContactId string
 	}
 
 	var info accountInfo
 	info.UserName = user.UserName
 	info.Email = user.Email
+
+	contact := NewContact()
+	user.To("Contact").Get(contact)
+	info.ContactId = contact.Id
 
 	accountDataTemplate.Execute(buffer, info)
 
@@ -49,7 +59,7 @@ func (c *loginController) Get(ctx *ripple.Context) {
 	username := ctx.Params["username"]
 	password := ctx.Params["password"]
 
-	if user, err := CheckUserPassword(username, password); err == nil {
+	if user, err := k.CheckUserPassword(username, password); err == nil {
 		accountData := generateUserDataJson(user)
 		ctx.Response.Body = "{\"success\":true, \"accountData\":" + accountData + "}"
 	} else {
@@ -59,11 +69,9 @@ func (c *loginController) Get(ctx *ripple.Context) {
 
 func initLoginController() {
 	instLoginController := new(loginController)
-	App.RegisterController("login", instLoginController)
+	k.App.RegisterController("login", instLoginController)
 
-	App.AddRoute(ripple.Route{
+	k.App.AddRoute(ripple.Route{
 		Pattern:    "/controller/login/:username/:password",
 		Controller: "login"})
 }
-
-var InitLoginControllerFunc func() = initLoginController

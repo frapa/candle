@@ -28,6 +28,13 @@ then
     mkdir ${BUILD}/static/collections
 fi
 
+if [ ! -d ${BUILD}/content ]
+then
+    mkdir ${BUILD}/content
+    # External libraries to be loaded on demand
+    mkdir ${BUILD}/content/libs
+fi
+
 if [ ! -f ${APP}/modules.txt ] 
 then
     echo "ERROR: Missing ${APP}/modules.txt"
@@ -36,9 +43,6 @@ fi
 
 # List of folders to be copied
 FOLDERS=(engine views libs js css templates models collections)
-
-# Copy index.html
-#cp ${CANDLE}/kernel/static/index.html ${BUILD}/static/
 
 for FOLDER in ${FOLDERS[*]}
 do
@@ -64,3 +68,13 @@ do
         i=$(( $i + 1 ))
     done < ${APP}/modules.txt
 done
+
+# Copy external libraries to be loaded on demand
+j=0
+while read MODULE; do
+    if [ -d ${CANDLE}/${MODULE}/static/external_libs/ ]
+    then
+        cp -R ${CANDLE}/${MODULE}/static/external_libs/ ${BUILD}/content/libs/${MODULE}
+    fi
+    j=$(( $j + 1 ))
+done < ${APP}/modules.txt

@@ -17,5 +17,6 @@ var global = {
         return new Date(pieces[2], pieces[1]-1, pieces[0]);
     },
     username: localStorage['username'],
-    password: localStorage['password']
+    password: localStorage['password'],
+    accountData: localStorage['accountData'] ? JSON.parse(localStorage['accountData']) : undefined,
 };

@@ -1,5 +1,5 @@
 .tooltip {
-    display: none;
+    visibility: hidden;
     position: absolute;
     z-index: 20;
 }

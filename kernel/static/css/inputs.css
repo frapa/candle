@@ -1,17 +1,10 @@
 fieldset {
     position: relative;
-    display: flex;
     border: 0;
     margin: 2.5em 0;
     padding: 0;
     left: 0;
     right: 0;
-}
-
-.widget-helper fieldset {
-    width: 100%;
-    margin: 0;
-    margin-bottom: 0.5em;
 }
 
 .input-bar {
@@ -22,6 +15,28 @@ fieldset {
     border-bottom: 1px solid §secondary-text-color;
 }
 
+.widget-helper fieldset {
+    margin: 0;
+    margin-bottom: 0;
+}
+
+.inline-editing-container .widget-helper {
+    margin: -0.25em 0;
+}
+
+.inline-editing-container .input-bar {
+    bottom: 0;
+    opacity: 0.3;
+}
+
+.inline-editing-container input[type="text"]:focus ~ .input-bar {
+    opacity: 1;
+}
+
+.widget-helper label {
+    display: none;
+}
+
 input {
     font-family: 'Lato';
     color: black;
@@ -30,7 +45,8 @@ input {
 /* Normal */
 input[type="text"],
 input[type="password"] {
-    flex-grow: 1;
+    box-sizing: border-box;
+    width: 100%;
     outline: none;
     font-size: 100%;
     border: 0;
@@ -146,14 +162,14 @@ input[type="password"]:invalid {
 }
 
 /* Focused */
-.selectbox-input:focus ~ .selectbox {
+.selectbox.open {
     background: §background-primary-color;
     box-shadow: 0 0.05em 0.25em §border-color;
     visibility: visible;
 }
 
 @media only screen and (max-width: 760px) {
-    .selectbox-input:focus ~ .selectbox {
+    .selectbox.open {
         display: fixed;
         top: 2em;
         bottom: 2em;
@@ -163,11 +179,11 @@ input[type="password"]:invalid {
     }
 }
 
-.selectbox-input:focus ~ .selectbox .selectbox-item {
+.selectbox.open .selectbox-item {
     display: block;
 }
 
-.selectbox-input:focus ~ .selectbox .selectbox-item.hover {
+.selectbox.open .selectbox-item.hover {
     color: §primary-color;
     background: §border-color-light;
     cursor: default;

@@ -112,7 +112,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         var $div = $('<div class="table-actions"></div>');
 
         var actions = this.actions.slice();
-        if (inlineEditing) {
+        /*if (inlineEditing) {
             var tooltip = new Kernel_View_Ui_Tooltip('Save');
 
             actions.push({
@@ -123,7 +123,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 },
                 tooltip: tooltip
             });
-        }
+        }*/
 
         var $actions = _.map(actions, function (action) {
             var $actionButton = $('<span class="table-action"></span>');
@@ -206,7 +206,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 $footer.append('<button class="flat inline-editing-save">Save</div>');
                 $row.append($footer);
 
-                $row = $('<div class="inline-editing-conatiner"></div>').append($row);
+                $row = $('<div class="inline-editing-container"></div>').append($row);
             }
 
             if (_this.click) {
@@ -246,11 +246,14 @@ var Kernel_View_Ui_Row = AbstractView.extend({
             this.$el
             .click(function () {
                 _this.inlineEditingActivated = true;
+                // see below; this is a flag to 
+                _this.inlineEditingActivatedNow = true;
                 var $current = _this.$el;
 
                 var anmgr = new AsyncNotificationManager(function () {
                     $current.replaceWith(_this.$el);
                     _this.trigger('activated');
+                    _this.initSaveOnOutsideClick();
                 });
 
                 _this.render({
@@ -258,8 +261,23 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                     anmgr: anmgr
                 });
                 anmgr.notifyEnd();
-            })
+            });
         }
+    },
+    
+    initSaveOnOutsideClick: function () {
+        var _this = this;
+
+        _this.checkOutsideClick = function (event) { 
+            if (!$(event.target).closest(_this.$el).length &&
+                _this.inlineEditingActivated)
+            {
+                _this.saveEditedRow();
+            }        
+        };
+
+        // detect click outside row
+        $(document).click(_this.checkOutsideClick);
     },
 
     saveEditedRow: function () {
@@ -271,8 +289,10 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
         this.model.save(undefined, {
             success: function (model) {
-                            }
+            }
         });
+
+        $(document).off('click', _this.checkOutsideClick);
         
         this.inlineEditingActivated = false;
 
@@ -300,6 +320,10 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         }
     },
 
+    insertOnEnter: function () {
+        this.saveEditedRow();
+    },
+
     createEditingWidget: function (cell, anmgr) {
         var _this = this;
         var $cell = $('<td class="widget">' +
@@ -307,7 +331,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
 
         if (cell.type === 'string' || cell.type === 'int64' || cell.type === 'float') {
             cell.widget = new Kernel_View_Ui_Entry({
-                label: cell.label
+                label: cell.label,
+                onEnter: this.insertOnEnter.bind(this),
             }).render();
             cell.widget.setValue(cell.data);
 
@@ -330,6 +355,7 @@ var Kernel_View_Ui_Row = AbstractView.extend({
         } else if (cell.type === 'Time') {
             cell.widget = new Kernel_View_Ui_Date({
                 label: cell.label,
+                onEnter: this.insertOnEnter.bind(this),
             }).render();
             
             // update model on change
@@ -369,7 +395,8 @@ var Kernel_View_Ui_Row = AbstractView.extend({
                 collection: linkedCollectionInst,
                 attr: cell.attr,
                 selected: cell.collection === undefined ?
-                    undefined : cell.collection.at(0)
+                    undefined : cell.collection.at(0),
+                onEnter: this.insertOnEnter.bind(this),
             })
 
             this.listenToOnce(cell.widget, 'render', function () {

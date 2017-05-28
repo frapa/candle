@@ -4,6 +4,7 @@ table.table {
     border: 1px solid §border-color;
     border-spacing: 0;
     table-layout: fixed;
+    position: relative;
 }
 
 table.table tr {
@@ -93,7 +94,7 @@ section table.treeSubTable tr:last-child {
         display: inline;
         color: §primary-color;
     }
-
+    
     table.table tr.adding-row {
         background: §border-color-light;
     }

@@ -15,6 +15,10 @@ var utils = {
         var width = $target[0].offsetWidth / this.emSize;
         return width;
     },
+
+    convertToEm: function (size) {
+        return size / this.emSize;
+    }
 };
 
 $(function () {

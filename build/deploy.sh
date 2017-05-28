@@ -1,3 +1,4 @@
+HOST=root@164.132.108.1
 APP=$(basename $(dirname $PWD))
 
 if [ -z "$1" ]
@@ -22,11 +23,11 @@ tar -czf $APP-$1.tar.gz $APP version.txt static/ bin/
 
 # copy to server
 echo "Uploading..."
-scp -P 25222 $APP-$1.tar.gz root@176.9.118.102:/var/www/$APP
+scp $APP-$1.tar.gz $HOST:/var/www/$APP
 
 # ssh into server and untar
 echo "Extracting archive and restarting the server..."
-ssh -p 25222 root@176.9.118.102 /bin/bash << EOF
+ssh $HOST /bin/bash << EOF
     cd /var/www/$APP
     killall $APP
     tar -xzf $APP-$1.tar.gz

@@ -11,7 +11,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: 'fontello';
-    src: url('../font/fontello.svg?67959315#fontello') format('svg');
+    src: url('../font/fontello.svg?76237514#fontello') format('svg');
   }
 }
 */
@@ -181,6 +181,7 @@
 .icon-download-cloud:before { content: '\e87f'; } /* '' */
 .icon-spin5:before { content: '\e880'; } /* '' */
 .icon-spin1:before { content: '\e881'; } /* '' */
+.icon-cloud-offline:before { content: '\e882'; } /* '' */
 .icon-down-dir:before { content: '\e883'; } /* '' */
 .icon-left-dir:before { content: '\e884'; } /* '' */
 .icon-right-dir:before { content: '\e885'; } /* '' */

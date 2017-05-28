@@ -5,6 +5,7 @@ function StatusMessage(options) {
     this.disappearCallback = options.disappear;
     this.endCallback = options.end;
     this.actions = options.actions;
+    this.onlyNaturalEnd = options.onlyNaturalEnd ? options.onlyNaturalEnd : false;
 }
 
 StatusMessage.prototype.show = function (timeout) {
@@ -39,7 +40,9 @@ StatusMessage.prototype.show = function (timeout) {
             _this.clickCallback(event);
         }
 
-        _this.endCallback = undefined;
+        if (_this.onlyNaturalEnd)
+            _this.endCallback = undefined;
+
         _this.destroy();
     });
     setTimeout(this.destroy.bind(this), timeout);

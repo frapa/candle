@@ -35,6 +35,17 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
         var $input = this.$('input');
         $input
             .on('keydown', function (event) {
+                // do not do things unless the dialog is open
+                if (!$input.hasClass('selected')) {
+                    if (event.key == 'Enter') {
+                        _.each(_this.enterCallbacks, function (callback) {
+                            callback(_this.getValue());
+                        });
+                    }
+
+                    return;
+                }
+
                 var date = _this.selectedDate.getDate();
                 
                 if (event.key == 'ArrowUp') {
@@ -43,10 +54,13 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
                     _this.selectedDate.setDate(date + 7);
                 } else if (event.key == 'ArrowLeft') {
                     // these two conflict with moving in the input
-                    //_this.selectedDate.setDate(date - 1);
+                    _this.selectedDate.setDate(date - 1);
                 } else if (event.key == 'ArrowRight') {
-                    //_this.selectedDate.setDate(date + 1);
+                    _this.selectedDate.setDate(date + 1);
                 } else if (event.key == 'Tab') {
+                    _this.dialog.close();
+                    return;
+                } else if (event.key == 'Enter') {
                     _this.dialog.close();
                     return;
                 } else {
@@ -60,6 +74,12 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
                 var date = global.dateParse($input[0].value);
                 _this.setValue(date);
                 _this.dialog.close();
+            })
+            .click(function () {
+                // Open dialog when element focused but not yet displayed
+                if (!$input.hasClass('selected')) {
+                    _this.focus();
+                }
             })
             .focus(this.focus.bind(this));
 
@@ -122,6 +142,9 @@ var Kernel_View_Ui_Date = Kernel_View_Ui_Entry.extend({
 
             _this.setValue(date);
             dialog.close();
+
+            _this.noFocus = true;
+            _this.$('input').focus();
         });
     },
 

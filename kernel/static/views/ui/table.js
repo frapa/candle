@@ -168,7 +168,7 @@ var Kernel_View_Ui_Table = AbstractView.extend({
         anmgr.waitForAction();
         var _this = this;
         var waitForAddingRow = new AsyncNotificationManager(function () {
-            _this.$tbody.prepend(_this.addingRow.$el);
+            _this.$tbody.before(_this.addingRow.$el);
 
             anmgr.notifyEnd();
         });
@@ -309,6 +309,7 @@ var Kernel_View_Ui_AddingRowHelper = AbstractView.extend({
             model: this.tmpModel,
             columns: this.columns,
         });
+        this.helperRow.insertOnEnter = this.onAdd.bind(this);
 
         // Use the heper row when ready
         options.anmgr.waitForAction();
@@ -348,9 +349,10 @@ var Kernel_View_Ui_AddingRowHelper = AbstractView.extend({
 
     initEvents: function () {
         var _this = this;
+
         // Make sure the model is modified at least once before allowing saving
         // of the temporary model
-        this.listenTo(this.tmpModel, 'change', function () {
+        this.listenToOnce(this.tmpModel, 'change', function () {
             _this.enableSave();
         });
     },
@@ -387,11 +389,13 @@ var Kernel_View_Ui_AddingRowHelper = AbstractView.extend({
     },
 
     enableSave: function () {
+        console.warn('what')
         this.addButtonActive = true;
         this.$saveAction.css('opacity', '1');
     },
 
     disableSave: function () {
+        console.log(213);
         this.addButtonActive = false;
         this.$saveAction.css('opacity', '0.5');
     },

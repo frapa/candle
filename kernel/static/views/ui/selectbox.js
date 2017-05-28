@@ -8,6 +8,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             this.collection.comparator = this.attr;
             this.label = options.label ? options.label : '';
             this.changeCallback = options.onChange;
+            this.onEnter = options.onEnter;
         }
 
         if (!(this.collection instanceof QueryCollection)) {
@@ -49,6 +50,7 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
     initListeners: function () {
         var _this = this;
         var $input = this.$('.selectbox-input');
+        var $selectbox = this.$('.selectbox');
 
         _.each(this.items, function (item) {
             // Click event for items in the list
@@ -102,10 +104,13 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
                 _this.previousValue = val;
                 _this.selected = item.model;
             }
+
+            $selectbox.removeClass('open');
         })
         .focus(function () {
             // Limit list length
             _this.setMaxListHeight();
+            $selectbox.addClass('open');
         })
         .on('input', function () {
             // Search in the list
@@ -120,13 +125,17 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
             case "ArrowUp":
                 _this.select(-1);
                 break;
-            case "ArrowRight":
             case "Enter":
+                if (!$selectbox.hasClass('open')) {
+                    _this.onEnter();
+                }
+            case "ArrowRight":
                 _.find(_this.items, function (item) {
                     if (item.selected) {
                         // simulate click
                         item.$item.trigger('click');
-                        _this.$('.selectbox').hide();
+                        $input.focus();
+                        $selectbox.removeClass('open');
                         _this.trigger('change', item.model);
                         return true;
                     }
@@ -134,13 +143,14 @@ var Kernel_View_Ui_Selectbox = AbstractView.extend({
                 });
                 break;
             case "Escape":
+                $selectbox.removeClass('open');
             }
         })
         // If item was selected with the keyboard and list was
         // closed, we still want to show the list, even tough
         // the input is already focused
         .click(function () {
-            _this.$('.selectbox').show();
+            $selectbox.addClass('open');
         });
 
         var justClosed = false;

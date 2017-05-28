@@ -216,6 +216,7 @@ func StartRestServer() {
 
 	// Init extra controllers in kernel
 	InitLoginControllerFunc()
+	initPingController()
 
 	// Start the server
 	http.HandleFunc("/api/", App.ServeHTTP)

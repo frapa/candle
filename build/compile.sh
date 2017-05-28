@@ -8,6 +8,10 @@ if [ -d ${BUILD}/static ]
 then
     rm -R ${BUILD}/static
 fi
+if [ -d ${BUILD}/content ]
+then
+    rm -R ${BUILD}/content
+fi
 
 # First build go executable
 # if there is one argument than compile
@@ -70,11 +74,26 @@ do
 done
 
 # Copy external libraries to be loaded on demand
+CONTENT=(libs images)
 j=0
-while read MODULE; do
-    if [ -d ${CANDLE}/${MODULE}/static/external_libs/ ]
+for FOLDER in ${CONTENT[*]}
+do
+    if [ ! -d ${BUILD}/content/${FOLDER} ]
     then
-        cp -R ${CANDLE}/${MODULE}/static/external_libs/ ${BUILD}/content/libs/${MODULE}
+        mkdir ${BUILD}/content/${FOLDER}
     fi
-    j=$(( $j + 1 ))
-done < ${APP}/modules.txt
+    
+    # Copy folder from app
+    if [ -d ${APP}/content/${FOLDER} ]
+    then
+        cp -R ${APP}/content/${FOLDER} ${BUILD}/content/${FOLDER}/app
+    fi
+
+    while read MODULE; do
+        if [ -d ${CANDLE}/${MODULE}/content/${FOLDER}/ ]
+        then
+            cp -R ${CANDLE}/${MODULE}/content/${FOLDER}/ ${BUILD}/content/${FOLDER}/${MODULE}
+        fi
+        j=$(( $j + 1 ))
+    done < ${APP}/modules.txt
+done
